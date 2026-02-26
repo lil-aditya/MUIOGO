@@ -49,5 +49,19 @@ export class Navbar {
             }
 			
         });
+        // QUIT HANDLER
+        $("#osy-quit").off('click');
+        $("#osy-quit").on('click', function (e) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            Base.quit()
+            .then(() => {
+                Message.info("Backend shutting down");
+            })
+            .catch(err => {
+                Message.danger("Shutdown failed");
+                console.error(err);
+            });
+    });
     }
 }

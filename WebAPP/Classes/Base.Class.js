@@ -19,6 +19,13 @@ export class Base {
         }
         return apiUrl
     }
+//  ADD THIS METHOD
+    static quit() {
+        return fetch("/shutdown", {
+            method: "POST",
+            credentials: "include"
+        });
+    }
 
     static initSyncS3() {
         return new Promise((resolve, reject) => {

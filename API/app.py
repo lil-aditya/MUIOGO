@@ -1,8 +1,16 @@
 #import sys
 import os
 import sys
-
-from flask import Flask, jsonify, request, session, render_template
+import signal
+import threading
+from flask import (
+    Flask,
+    jsonify,
+    request,
+    session,
+    render_template,
+    abort
+)
 from flask_cors import CORS
 from datetime import timedelta
 # from pathlib import Path
@@ -38,6 +46,10 @@ print(static_dir)
 print(sys.executable)
 
 print(__name__)
+
+#added the shutdown helper
+def shutdown_server():
+    os.kill(os.getpid(), signal.SIGTERM)
 
 app = Flask(__name__, static_url_path='', static_folder=static_dir,  template_folder=template_dir)
 
@@ -108,7 +120,19 @@ def setSession():
         return jsonify(response), 200
     except( KeyError ):
         return jsonify('No selected parameters!'), 404
+#added for health check
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok"}), 200
+#added the shutdown route for graceful shutdown
+@app.route("/shutdown", methods=["POST"])
+def shutdown():
+    # Allow shutdown ONLY in local mode
+    if Config.HEROKU_DEPLOY != 0:
+        abort(403)
 
+    threading.Thread(target=shutdown_server).start()
+    return {"status": "shutting down"}, 200
 
 if __name__ == '__main__':
 # if __name__ == 'app':
