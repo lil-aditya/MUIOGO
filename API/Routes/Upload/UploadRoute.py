@@ -1,5 +1,5 @@
 import shutil
-from flask import Blueprint, request, jsonify, send_file, after_this_request
+from flask import Blueprint, request, jsonify, send_file, after_this_request, abort
 from zipfile import ZipFile
 from pathlib import Path
 from werkzeug.utils import secure_filename
@@ -9,7 +9,8 @@ from threading import Thread
 
 from Classes.Base import Config
 from Classes.Base.FileClass import File
-
+#added to replace unsafe ZIP extraction with safe one
+from Classes.Base.path_utils import safe_extract_zip, safe_case_path
 upload_api = Blueprint('UploadRoute', __name__)
 
 #File extension checking
@@ -206,10 +207,15 @@ def backupCase():
     try:    
         #case = request.form['case']
         #case = request.json['casename']
-        case = request.args.get('case')
+        case = request.args.get("case")
+        if not case:
+            abort(400, "Missing case parameter")
 
-        casePath = Path('WebAPP', 'DataStorage',case)
-        zippedFile = Path('WebAPP', 'DataStorage', case+'.zip')
+        try:
+            casePath = safe_case_path(case)
+        except ValueError:
+            abort(400, "Invalid case path")
+        zippedFile = safe_case_path(case).with_suffix(".zip")
 
         '''File system data storage'''
         with ZipFile(zippedFile, 'w') as zipObj:
@@ -278,8 +284,13 @@ def uploadCaseUnchunked_old():
                                 name = data.get('osy-version', None)
 
                                 if name == '1.0' or name == '2.0':
-                                    zf.extractall(os.path.join(Config.EXTRACT_FOLDER))
-
+                                    try:
+                                        safe_extract_zip(
+                                            Path(os.path.join(Config.DATA_STORAGE, filename)),
+                                            Path(Config.EXTRACT_FOLDER)
+                                        )
+                                    except ValueError:
+                                        abort(400, "Invalid ZIP: path traversal detected")
                                     #add res view folders with json default files
                                     configPath = Path(Config.DATA_STORAGE, 'Variables.json')
                                     vars = File.readParamFile(configPath)
@@ -288,10 +299,14 @@ def uploadCaseUnchunked_old():
                                         for list in lists:
                                             viewDef[list['id']] = []
 
-                                    resPath = Path(Config.DATA_STORAGE,case,'res')
-                                    viewPath = Path(Config.DATA_STORAGE,case,'view')
-                                    resDataPath = Path(Config.DATA_STORAGE,case,'view','resData.json')
-                                    viewDataPath = Path(Config.DATA_STORAGE,case,'view','viewDefinitions.json')
+                                    try:
+                                        casePath = safe_case_path(case)
+                                    except ValueError:
+                                        abort(400, "Invalid case path")
+                                    resPath = casePath / "res"
+                                    viewPath = casePath / "view"
+                                    resDataPath = casePath / "view" / "resData.json"
+                                    viewDataPath = casePath / "view" / "viewDefinitions.json"
 
                                     # remove res and view folder if ver 1.0
                                     if os.path.exists(resPath):
@@ -325,7 +340,13 @@ def uploadCaseUnchunked_old():
                                 elif name == '3.0': 
                                     #potrebno dodati tech groups
                                     #case = data.get('osy-casename', None)
-                                    zf.extractall(os.path.join(Config.EXTRACT_FOLDER))
+                                    try:
+                                        safe_extract_zip(
+                                            Path(os.path.join(Config.DATA_STORAGE, filename)),
+                                            Path(Config.EXTRACT_FOLDER)
+                                        )
+                                    except ValueError:
+                                        abort(400, "Invalid ZIP: path traversal detected")
                                     genDataPath = Path(Config.DATA_STORAGE, casename, 'genData.json')
                                     genData = File.readParamFile(genDataPath)
                                     genData["osy-techGroups"] = []
@@ -344,7 +365,13 @@ def uploadCaseUnchunked_old():
                                         "casename": casename
                                     })
                                 elif name == '4.0' or name == '4.5' or name == '4.9': 
-                                    zf.extractall(os.path.join(Config.EXTRACT_FOLDER))
+                                    try:
+                                        safe_extract_zip(
+                                            Path(os.path.join(Config.DATA_STORAGE, filename)),
+                                            Path(Config.EXTRACT_FOLDER)
+                                        )
+                                    except ValueError:
+                                        abort(400, "Invalid ZIP: path traversal detected")
                                     # potrebno updatevoati YearSplit u verziji 5.0 su dinamicki
                                     #update for dynamic timeslicec
                                     updateTimeslices(casename)
@@ -369,10 +396,14 @@ def uploadCaseUnchunked_old():
                                 #             "message": "Model " + casename +" have been uploaded!",
                                 #             "status_code": "success",
                                 #             "casename": casename
-                                #         })
-
                                 elif name == '5.0': 
-                                    zf.extractall(os.path.join(Config.EXTRACT_FOLDER))
+                                    try:
+                                        safe_extract_zip(
+                                            Path(os.path.join(Config.DATA_STORAGE, filename)),
+                                            Path(Config.EXTRACT_FOLDER)
+                                        )
+                                    except ValueError:
+                                        abort(400, "Invalid ZIP: path traversal detected")
                                     updateViewDefintions(casename)
                                     msg.append({
                                         "message": "Model " + casename +" have been uploaded!",
@@ -455,17 +486,28 @@ def handle_full_zip(file, filepath=None):
                     #     TVOJA ORIGINALNA LOGIKA
                     # ---------------------------
                     if name == '1.0' or name == '2.0':
-                        zf.extractall(os.path.join(Config.EXTRACT_FOLDER))
+                        try:
+                            safe_extract_zip(
+                                Path(filepath),
+                                Path(Config.EXTRACT_FOLDER)
+                            )
+                        except ValueError:
+                            abort(400, "Invalid ZIP: path traversal detected")
+
                         configPath = Path(Config.DATA_STORAGE, 'Variables.json')
                         vars = File.readParamFile(configPath)
                         viewDef = {}
                         for group, lists in vars.items():
                             for list in lists:
                                 viewDef[list['id']] = []
-                        resPath = Path(Config.DATA_STORAGE,casename,'res')
-                        viewPath = Path(Config.DATA_STORAGE,casename,'view')
-                        resDataPath = Path(Config.DATA_STORAGE,case,'view','resData.json')
-                        viewDataPath = Path(Config.DATA_STORAGE,case,'view','viewDefinitions.json')
+                        try:
+                            casePath = safe_case_path(casename)
+                        except ValueError:
+                            abort(400, "Invalid case path")
+                        resPath = casePath / "res"
+                        viewPath = casePath / "view"
+                        resDataPath = casePath / "view" / "resData.json"
+                        viewDataPath = casePath / "view" / "viewDefinitions.json"
                         if os.path.exists(resPath):
                             shutil.rmtree(resPath)
                         if os.path.exists(viewPath):
@@ -484,7 +526,14 @@ def handle_full_zip(file, filepath=None):
                             "casename": casename
                         })
                     elif name == '3.0':
-                        zf.extractall(os.path.join(Config.EXTRACT_FOLDER))
+                        try:
+                            safe_extract_zip(
+                                Path(filepath),
+                                Path(Config.EXTRACT_FOLDER)
+                            )
+                        except ValueError:
+                            abort(400, "Invalid ZIP: path traversal detected")
+
                         genDataPath = Path(Config.DATA_STORAGE, casename, 'genData.json')
                         genData = File.readParamFile(genDataPath)
                         genData["osy-techGroups"] = []
@@ -500,7 +549,14 @@ def handle_full_zip(file, filepath=None):
                             "casename": casename
                         })
                     elif name in ['4.0', '4.5', '4.9']:
-                        zf.extractall(os.path.join(Config.EXTRACT_FOLDER))
+                        try:
+                            safe_extract_zip(
+                                Path(filepath),
+                                Path(Config.EXTRACT_FOLDER)
+                            )
+                        except ValueError:
+                            abort(400, "Invalid ZIP: path traversal detected")
+
                         updateTimeslices(casename)
                         updateStorageSet(casename)
                         updateViewDefintions(casename)
@@ -511,7 +567,14 @@ def handle_full_zip(file, filepath=None):
                             "casename": casename
                         })
                     elif name == '5.0':
-                        zf.extractall(os.path.join(Config.EXTRACT_FOLDER))
+                        try:
+                            safe_extract_zip(
+                                Path(filepath),
+                                Path(Config.EXTRACT_FOLDER)
+                            )
+                        except ValueError:
+                            abort(400, "Invalid ZIP: path traversal detected")
+
                         updateViewDefintions(casename)
                         msg.append({
                             "message": "Model " + casename +" have been uploaded!",
