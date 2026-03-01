@@ -284,13 +284,13 @@ def uploadCaseUnchunked_old():
                                 name = data.get('osy-version', None)
 
                                 if name == '1.0' or name == '2.0':
+                                    # Change 1: Remove second argument
                                     try:
                                         safe_extract_zip(
-                                            Path(os.path.join(Config.DATA_STORAGE, filename)),
-                                            Path(Config.EXTRACT_FOLDER)
+                                            Path(os.path.join(Config.DATA_STORAGE, filename))
                                         )
-                                    except ValueError:
-                                        abort(400, "Invalid ZIP: path traversal detected")
+                                    except ValueError as e:
+                                        abort(400, f"Invalid ZIP: {e}")
                                     #add res view folders with json default files
                                     configPath = Path(Config.DATA_STORAGE, 'Variables.json')
                                     vars = File.readParamFile(configPath)
@@ -316,8 +316,8 @@ def uploadCaseUnchunked_old():
                                         shutil.rmtree(viewPath)
 
                                     
-                                    os.makedirs(resPath, mode=0o777, exist_ok=False)
-                                    os.makedirs(viewPath, mode=0o777, exist_ok=False)
+                                    os.makedirs(resPath, exist_ok=True)
+                                    os.makedirs(viewPath, exist_ok=True)
                                     resData = {
                                         "osy-cases":[]
                                     }
@@ -340,13 +340,13 @@ def uploadCaseUnchunked_old():
                                 elif name == '3.0': 
                                     #potrebno dodati tech groups
                                     #case = data.get('osy-casename', None)
+                                    # Change 2: Remove second argument
                                     try:
                                         safe_extract_zip(
-                                            Path(os.path.join(Config.DATA_STORAGE, filename)),
-                                            Path(Config.EXTRACT_FOLDER)
+                                            Path(os.path.join(Config.DATA_STORAGE, filename))
                                         )
-                                    except ValueError:
-                                        abort(400, "Invalid ZIP: path traversal detected")
+                                    except ValueError as e:
+                                        abort(400, f"Invalid ZIP: {e}")
                                     genDataPath = Path(Config.DATA_STORAGE, casename, 'genData.json')
                                     genData = File.readParamFile(genDataPath)
                                     genData["osy-techGroups"] = []
@@ -365,13 +365,13 @@ def uploadCaseUnchunked_old():
                                         "casename": casename
                                     })
                                 elif name == '4.0' or name == '4.5' or name == '4.9': 
+                                    # Change 3: Remove second argument
                                     try:
                                         safe_extract_zip(
-                                            Path(os.path.join(Config.DATA_STORAGE, filename)),
-                                            Path(Config.EXTRACT_FOLDER)
+                                            Path(os.path.join(Config.DATA_STORAGE, filename))
                                         )
-                                    except ValueError:
-                                        abort(400, "Invalid ZIP: path traversal detected")
+                                    except ValueError as e:
+                                        abort(400, f"Invalid ZIP: {e}")
                                     # potrebno updatevoati YearSplit u verziji 5.0 su dinamicki
                                     #update for dynamic timeslicec
                                     updateTimeslices(casename)
@@ -397,13 +397,13 @@ def uploadCaseUnchunked_old():
                                 #             "status_code": "success",
                                 #             "casename": casename
                                 elif name == '5.0': 
+                                    # Change 4: Remove second argument
                                     try:
                                         safe_extract_zip(
-                                            Path(os.path.join(Config.DATA_STORAGE, filename)),
-                                            Path(Config.EXTRACT_FOLDER)
+                                            Path(os.path.join(Config.DATA_STORAGE, filename))
                                         )
-                                    except ValueError:
-                                        abort(400, "Invalid ZIP: path traversal detected")
+                                    except ValueError as e:
+                                        abort(400, f"Invalid ZIP: {e}")
                                     updateViewDefintions(casename)
                                     msg.append({
                                         "message": "Model " + casename +" have been uploaded!",
@@ -486,13 +486,11 @@ def handle_full_zip(file, filepath=None):
                     #     TVOJA ORIGINALNA LOGIKA
                     # ---------------------------
                     if name == '1.0' or name == '2.0':
+                        # Change 5: Remove second argument
                         try:
-                            safe_extract_zip(
-                                Path(filepath),
-                                Path(Config.EXTRACT_FOLDER)
-                            )
-                        except ValueError:
-                            abort(400, "Invalid ZIP: path traversal detected")
+                            safe_extract_zip(Path(filepath))
+                        except ValueError as e:
+                            abort(400, f"Invalid ZIP: {e}")
 
                         configPath = Path(Config.DATA_STORAGE, 'Variables.json')
                         vars = File.readParamFile(configPath)
@@ -512,8 +510,8 @@ def handle_full_zip(file, filepath=None):
                             shutil.rmtree(resPath)
                         if os.path.exists(viewPath):
                             shutil.rmtree(viewPath)
-                        os.makedirs(resPath, mode=0o777, exist_ok=False)
-                        os.makedirs(viewPath, mode=0o777, exist_ok=False)
+                        os.makedirs(resPath, exist_ok=True)
+                        os.makedirs(viewPath, exist_ok=True)
                         resData = {"osy-cases":[]}
                         File.writeFile(resData, resDataPath)
                         viewData = {"osy-views": viewDef}
@@ -526,13 +524,11 @@ def handle_full_zip(file, filepath=None):
                             "casename": casename
                         })
                     elif name == '3.0':
+                        # Change 6: Remove second argument
                         try:
-                            safe_extract_zip(
-                                Path(filepath),
-                                Path(Config.EXTRACT_FOLDER)
-                            )
-                        except ValueError:
-                            abort(400, "Invalid ZIP: path traversal detected")
+                            safe_extract_zip(Path(filepath))
+                        except ValueError as e:
+                            abort(400, f"Invalid ZIP: {e}")
 
                         genDataPath = Path(Config.DATA_STORAGE, casename, 'genData.json')
                         genData = File.readParamFile(genDataPath)
@@ -549,13 +545,11 @@ def handle_full_zip(file, filepath=None):
                             "casename": casename
                         })
                     elif name in ['4.0', '4.5', '4.9']:
+                        # Change 7: Remove second argument
                         try:
-                            safe_extract_zip(
-                                Path(filepath),
-                                Path(Config.EXTRACT_FOLDER)
-                            )
-                        except ValueError:
-                            abort(400, "Invalid ZIP: path traversal detected")
+                            safe_extract_zip(Path(filepath))
+                        except ValueError as e:
+                            abort(400, f"Invalid ZIP: {e}")
 
                         updateTimeslices(casename)
                         updateStorageSet(casename)
@@ -567,13 +561,11 @@ def handle_full_zip(file, filepath=None):
                             "casename": casename
                         })
                     elif name == '5.0':
+                        # Change 8: Remove second argument
                         try:
-                            safe_extract_zip(
-                                Path(filepath),
-                                Path(Config.EXTRACT_FOLDER)
-                            )
-                        except ValueError:
-                            abort(400, "Invalid ZIP: path traversal detected")
+                            safe_extract_zip(Path(filepath))
+                        except ValueError as e:
+                            abort(400, f"Invalid ZIP: {e}")
 
                         updateViewDefintions(casename)
                         msg.append({

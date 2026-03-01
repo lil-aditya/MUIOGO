@@ -1,36 +1,49 @@
 from pathlib import Path
 import zipfile
-# Central data root (single source of truth)
-DATA_ROOT = Path("WebAPP", "DataStorage").resolve()
+from Classes.Base import Config
+
 
 def safe_join(base: Path, *paths: str) -> Path:
     base = base.resolve()
     target = (base / Path(*paths)).resolve()
 
-    if not str(target).startswith(str(base)):
+    if not target.is_relative_to(base):
         raise ValueError("Path traversal detected")
 
     return target
 
 
-def safe_extract_zip(zip_path: Path, extract_to: Path) -> None:
-    extract_to = extract_to.resolve()
+def safe_extract_zip(zip_path: Path) -> None:
+    # The ONLY allowed extraction root — never the project root
+    base_dir = Path(Config.DATA_STORAGE).resolve()
 
     with zipfile.ZipFile(zip_path) as zf:
+        # VALIDATION PASS — check all entries before extracting any
         for member in zf.infolist():
-            # Validate destination path BEFORE extraction
-            safe_join(extract_to, member.filename)
+            member_path = Path(member.filename)
 
-        # Only extract after all paths are validated
-        zf.extractall(extract_to)
+            # 1. Reject absolute paths
+            if member_path.is_absolute():
+                raise ValueError(f"Absolute path in ZIP: {member.filename}")
+
+            # 2. Reject obvious traversal attempts in raw path
+            if ".." in member_path.parts:
+                raise ValueError(f"Path traversal in ZIP: {member.filename}")
+
+            # 3. Resolve final target path and enforce containment
+            target_path = (base_dir / member_path).resolve()
+            if not target_path.is_relative_to(base_dir):
+                raise ValueError(f"ZIP entry escapes DATA_STORAGE: {member.filename}")
+
+        # EXTRACTION PASS — only after ALL entries validated
+        zf.extractall(base_dir)
+
 
 def safe_case_path(case: str) -> Path:
-    """
-    Resolve a case path and ensure it stays inside DataStorage.
-    """
-    target = (DATA_ROOT / case).resolve()
+    base = Path(Config.DATA_STORAGE).resolve()
+    target = (base / case).resolve()
 
-    if not str(target).startswith(str(DATA_ROOT)):
-        raise ValueError("Invalid path")
+    if not target.is_relative_to(base):
+        raise ValueError(f"Invalid case path: {case}")
 
     return target

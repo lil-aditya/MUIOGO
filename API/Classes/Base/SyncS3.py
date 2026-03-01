@@ -42,36 +42,45 @@ class SyncS3():
         - bucket: s3 bucket with target contents
         - client: initialized s3 client object
         """
-        client=self.client
+        client = self.client
+        base = Path(local).resolve()
+
         keys = []
         dirs = []
         next_token = ''
         base_kwargs = {
-            'Bucket':bucket,
-            'Prefix':prefix,
+            'Bucket': bucket,
+            'Prefix': prefix,
         }
+
         while next_token is not None:
             kwargs = base_kwargs.copy()
-            if next_token != '':
-                kwargs.update({'ContinuationToken': next_token})
+            if next_token:
+                kwargs['ContinuationToken'] = next_token
             results = client.list_objects_v2(**kwargs)
-            contents = results.get('Contents')
-            for i in contents:
-                k = i.get('Key')
-                if k[-1] != '/':
-                    keys.append(k)
+            contents = results.get('Contents', [])
+            for obj in contents:
+                key = obj['Key']
+                if key.endswith('/'):
+                    dirs.append(key)
                 else:
-                    dirs.append(k)
+                    keys.append(key)
             next_token = results.get('NextContinuationToken')
+
+        # create directories safely
         for d in dirs:
-            dest_pathname = os.path.join(local, d)
-            if not os.path.exists(os.path.dirname(dest_pathname)):
-                os.makedirs(os.path.dirname(dest_pathname))
+            target = (base / Path(d)).resolve()
+            if not target.is_relative_to(base):
+                raise ValueError(f"S3 directory escapes local path: {d}")
+            target.mkdir(parents=True, exist_ok=True)
+
+        # download files safely
         for k in keys:
-            dest_pathname = os.path.join(local, k)
-            if not os.path.exists(os.path.dirname(dest_pathname)):
-                os.makedirs(os.path.dirname(dest_pathname))
-            client.download_file(bucket, k, dest_pathname)
+            target = (base / Path(k)).resolve()
+            if not target.is_relative_to(base):
+                raise ValueError(f"S3 key escapes local path: {k}")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            client.download_file(bucket, k, str(target))
 
     #s3.uploadSync(localDir, case, Config.S3_BUCKET, '*')
     def uploadSync(self, localDir, awsInitDir, bucketName, tag, prefix='\\'):
