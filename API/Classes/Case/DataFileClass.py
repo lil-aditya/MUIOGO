@@ -972,6 +972,9 @@ class DataFile(Osemosys):
 
             for caserunname in os.listdir( self.resultsPath):
                 caserunname_path = os.path.join(self.resultsPath, caserunname)
+                # Skip files such as .DS_Store that can appear on macOS.
+                if not os.path.isdir(caserunname_path):
+                    continue
                 for carerunData in os.listdir( caserunname_path):
                     file_path = os.path.join(caserunname_path, carerunData)
                     try:
@@ -2100,39 +2103,62 @@ class DataFile(Osemosys):
             self.lpFile = Path(Config.DATA_STORAGE,self.case, 'res',caserunname,'lp.lp')
             self.resPath = Path(Config.DATA_STORAGE,self.case, 'res',caserunname)
             
-            modelfile = '"{}"'.format(self.osemosysFile.resolve())
-            modelfile_original = '"{}"'.format(self.osemosysFileOriginal.resolve())
-            datafile = '"{}"'.format(self.dataFile.resolve())
-            datafile_processed = '"{}"'.format(self.dataFile_processed.resolve())
-            resultfile = '"{}"'.format(self.resFile.resolve())
-            logfile = '"{}"'.format(self.logFile.resolve())
-            logfiletxt = '"{}"'.format(self.logFileTxt.resolve())
-            lpfile = '"{}"'.format(self.lpFile.resolve())
+            modelfile = str(self.osemosysFile.resolve())
+            modelfile_original = str(self.osemosysFileOriginal.resolve())
+            datafile = str(self.dataFile.resolve())
+            datafile_processed = str(self.dataFile_processed.resolve())
+            resultfile = str(self.resFile.resolve())
+            logfile = str(self.logFile.resolve())
+            logfiletxt = str(self.logFileTxt.resolve())
+            lpfile = str(self.lpFile.resolve())
 
 
             
 
-            glpfolder =self.glpkFolder.resolve()
-            cbcfolder =self.cbcFolder.resolve()
+            glpfolder = self.glpkFolder.resolve()
+            cbcfolder = self.cbcFolder.resolve()
+            glpsol_exec = Osemosys._find_solver_binary(glpfolder, "glpsol", recursive=False)
+            if glpsol_exec is None:
+                raise RuntimeError(
+                    f"Could not find 'glpsol' in resolved folder '{glpfolder}'. "
+                    "Check SOLVER_GLPK_PATH or solver installation."
+                )
             # respath = self.resPath.resolve()
             # resCBCPath = self.resCBCPath.resolve()
 
             self.deleteCaseResultsJSON(caserunname)
 
             if solver == 'glpk':
-                out = subprocess.run('glpsol -m ' + modelfile +' -d ' + datafile +' -o ' + resultfile, cwd=glpfolder,  capture_output=True, text=True, shell=True)
+                glpk_out = subprocess.run(
+                    [str(glpsol_exec), "-m", modelfile, "-d", datafile, "-o", resultfile],
+                    cwd=glpfolder,
+                    capture_output=True,
+                    text=True,
+                )
+                cbc_out = subprocess.CompletedProcess(args=["cbc"], returncode=0, stdout="", stderr="")
             else:
                 #Matrix generation (creates an LP file with GLPK): glpsol --check -m [model].txt -d [data].txt --wlp [LPfile].lp
                 #Optimisation (solves LP file with CBC): cbc [LPfile].lp solve -solu [results].txt
                 #PREPROCESS data.txt
                 #subprocess.run('preprocess_data.py' + datafile + dataFile_processed)
+                cbc_exec = Osemosys._find_solver_binary(cbcfolder, "cbc", recursive=False)
+                if cbc_exec is None:
+                    raise RuntimeError(
+                        f"Could not find 'cbc' in resolved folder '{cbcfolder}'. "
+                        "Check SOLVER_CBC_PATH or solver installation."
+                    )
 
                 self.preprocessData(self.dataFile, self.dataFile_processed)
                 print("PREPROCESSING DONE! --- %s seconds --- %s" % (time.time() - start_time, caserunname))
                 txtOut = txtOut + ("Preprocessing time {:0.2f}s;{}".format(time.time() - start_time, '\n'))
 
                 #return output to variable preprocessed data file
-                glpk_out = subprocess.run('glpsol --check -m ' + modelfile +' -d ' + datafile_processed +' --wlp ' + lpfile, cwd=glpfolder,  capture_output=True, text=True, shell=True)
+                glpk_out = subprocess.run(
+                    [str(glpsol_exec), "--check", "-m", modelfile, "-d", datafile_processed, "--wlp", lpfile],
+                    cwd=glpfolder,
+                    capture_output=True,
+                    text=True,
+                )
             
 
                 #glpk_out = subprocess.run('glpsol --check -m ' + modelfile +' -d ' + datafile_processed +' --wlp ' + lpfile, cwd=cbcfolder,  capture_output=True, text=True, shell=True)
@@ -2157,7 +2183,12 @@ class DataFile(Osemosys):
 
                 #cbc_out = subprocess.run('cbc ' + lpfile +' -presolve off -postsolve on -logLevel 3 solve -printing all -solu '  + resultfile, cwd=cbcfolder,  capture_output=True, text=True, shell=True)
                 # prin
-                cbc_out = subprocess.run('cbc ' + lpfile +' solve -printing all -solu '  + resultfile, cwd=cbcfolder,  capture_output=True, text=True, shell=True)
+                cbc_out = subprocess.run(
+                    [str(cbc_exec), lpfile, "solve", "-printing", "all", "-solu", resultfile],
+                    cwd=cbcfolder,
+                    capture_output=True,
+                    text=True,
+                )
                 # -printing all prints all constraints to result.txt
                 print("SOLUTION DONE! --- %s seconds --- %s" % (time.time() - start_time, caserunname))
                 txtOut = txtOut + ("Solution time {:0.2f}s;{}".format(time.time() - start_time, '\n'))

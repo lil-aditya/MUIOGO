@@ -58,7 +58,7 @@ def download_dir(prefix, local, bucket, client):
             os.makedirs(os.path.dirname(dest_pathname))
         client.download_file(bucket, k, dest_pathname)
 
-def upload_dir(s3, localDir, awsInitDir, bucketName, tag, prefix='\\'):
+def upload_dir(s3, localDir, awsInitDir, bucketName, tag, prefix=os.sep):
     """
     from current working directory, upload a 'localDir' with all its subcontents (files and subdirectories...)
     to a aws bucket
@@ -87,7 +87,7 @@ def upload_dir(s3, localDir, awsInitDir, bucketName, tag, prefix='\\'):
             fileName = str(FullfileName).replace(str(localDir), '')
             if fileName.startswith(prefix):  # only modify the text if it starts with the prefix
                 fileName = fileName.replace(prefix, "", 1) # remove one instance of prefix
-                fileName = fileName.replace('\\', '/')
+                fileName = fileName.replace(os.sep, '/')
 
             awsPath = str(awsInitDir) + '/' + str(fileName)
             # S3.resource.meta.client.upload_file(FullfileName, bucketName, awsPath)
@@ -301,8 +301,8 @@ def uploadCaseUnchunked_old():
                                         shutil.rmtree(viewPath)
 
                                     
-                                    os.makedirs(resPath, mode=0o777, exist_ok=False)
-                                    os.makedirs(viewPath, mode=0o777, exist_ok=False)
+                                    os.makedirs(resPath, exist_ok=True)
+                                    os.makedirs(viewPath, exist_ok=True)
                                     resData = {
                                         "osy-cases":[]
                                     }
@@ -470,8 +470,8 @@ def handle_full_zip(file, filepath=None):
                             shutil.rmtree(resPath)
                         if os.path.exists(viewPath):
                             shutil.rmtree(viewPath)
-                        os.makedirs(resPath, mode=0o777, exist_ok=False)
-                        os.makedirs(viewPath, mode=0o777, exist_ok=False)
+                        os.makedirs(resPath, exist_ok=True)
+                        os.makedirs(viewPath, exist_ok=True)
                         resData = {"osy-cases":[]}
                         File.writeFile(resData, resDataPath)
                         viewData = {"osy-views": viewDef}

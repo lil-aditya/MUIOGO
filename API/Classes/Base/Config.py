@@ -19,15 +19,28 @@ S3_SECRET = ""
 
 ALLOWED_EXTENSIONS = set(['zip', 'application/zip'])
 ALLOWED_EXTENSIONS_XLS = set(['xls', 'xlsx'])
+# -------------------------
+# FIX: Make paths independent of working directory
+# -------------------------
 
-UPLOAD_FOLDER = Path('WebAPP')
-WebAPP_PATH = Path('WebAPP')
-DATA_STORAGE = Path("WebAPP", 'DataStorage')
-CLASS_FOLDER = Path("WebAPP", 'Classes')
-EXTRACT_FOLDER = Path("")
-SOLVERs_FOLDER = Path('WebAPP', 'SOLVERs')
+# This file is in: API/Classes/Base/Config.py
+# So project root is 3 levels up
+BASE_DIR = Path(__file__).resolve().parents[3]
 
+WEBAPP_PATH = BASE_DIR / "WebAPP"
 
+UPLOAD_FOLDER = WEBAPP_PATH
+DATA_STORAGE = WEBAPP_PATH / "DataStorage"
+CLASS_FOLDER = WEBAPP_PATH / "Classes"
+SOLVERs_FOLDER = WEBAPP_PATH / "SOLVERs"
+EXTRACT_FOLDER = BASE_DIR
+
+# Ensure DataStorage exists
+DATA_STORAGE.mkdir(parents=True, exist_ok=True)
+
+# Validate writability instead of forcing permissions
+if not os.access(DATA_STORAGE, os.W_OK):
+    raise PermissionError(f"Data storage path is not writable: {DATA_STORAGE}")
 #absolute paths
 # OSEMOSYS_ROOT = os.path.abspath(os.getcwd())
 # UPLOAD_FOLDER = Path(OSEMOSYS_ROOT, 'WebAPP')
@@ -36,8 +49,6 @@ SOLVERs_FOLDER = Path('WebAPP', 'SOLVERs')
 # CLASS_FOLDER = Path(OSEMOSYS_ROOT, "WebAPP", 'Classes')
 # EXTRACT_FOLDER = Path(OSEMOSYS_ROOT, "")
 # SOLVERs_FOLDER = Path(OSEMOSYS_ROOT, 'WebAPP', 'SOLVERs')
-
-os.chmod(DATA_STORAGE, 0o777)
 
 HEROKU_DEPLOY = 0
 AWS_SYNC = 0
@@ -203,7 +214,7 @@ PARAMETERS_C = {
         'DiscountRate': ['r'],
         'OutputActivityRatio':['r','f','t','y','m'],
         'InputActivityRatio':['r','f','t','y','m'],
-        'EmissionActivityRatio':['r','e''t','y','m'],
+        'EmissionActivityRatio':['r','e','t','y','m'],
         'TotalAnnualMaxCapacityInvestment':['r','t','y'],
         'TotalAnnualMinCapacityInvestment':['r','t','y'],
         'TotalTechnologyAnnualActivityUpperLimit':['r','t','y'],
@@ -243,4 +254,3 @@ PARAMETERS_C_full = {
         'SpecifiedDemandProfile': ['r','f','y','l','SpecifiedDemandProfile'],
         'ResidualStorageCapacity': ['r','s','y','ResidualStorageCapacity'],
     }
-
