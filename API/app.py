@@ -131,7 +131,11 @@ def shutdown():
     if Config.HEROKU_DEPLOY != 0:
         abort(403)
 
-    threading.Thread(target=shutdown_server).start()
+    # Use a short delay and a daemon thread so the HTTP response can be sent
+    # before the process is terminated by shutdown_server.
+    timer = threading.Timer(0.5, shutdown_server)
+    timer.daemon = True
+    timer.start()
     return {"status": "shutting down"}, 200
 
 if __name__ == '__main__':
