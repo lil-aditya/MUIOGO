@@ -1,21 +1,19 @@
 from pathlib import Path
 import os
-#from dotenv import load_dotenv
 import platform
 
-#load environment variables
-#load_dotenv()
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # dotenv is optional; environment variables may already be set
+    pass
 
 SYSTEM = platform.system()
 
-# S3_BUCKET = os.environ.get("S3_BUCKET")
-# S3_KEY = os.environ.get("S3_KEY")
-# S3_SECRET = os.environ.get("S3_SECRET")
-
-#S3 bucket is not used in Osemosys
-S3_BUCKET = ""
-S3_KEY = ""
-S3_SECRET = ""
+S3_BUCKET = os.environ.get("S3_BUCKET", "")
+S3_KEY = os.environ.get("S3_KEY", "")
+S3_SECRET = os.environ.get("S3_SECRET", "")
 
 ALLOWED_EXTENSIONS = set(['zip', 'application/zip'])
 ALLOWED_EXTENSIONS_XLS = set(['xls', 'xlsx'])
