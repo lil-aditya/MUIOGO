@@ -53,6 +53,12 @@ DEMO_DATA_ARCHIVE = PROJECT_ROOT / "assets" / "demo-data" / "CLEWs.Demo.zip"
 DEMO_DATA_ARCHIVE_SHA256 = "facf4bda703f67b3c8b8697fea19d7d49be72bc2029fc05a68c61fd12ba7edde"
 DEMO_DATA_REQUIRED_DIRS = [DATA_STORAGE_DIR / "CLEWs Demo"]
 DEMO_DATA_MARKER = DATA_STORAGE_DIR / ".demo_data_installed.json"
+_CBC_WINDOWS_VERSION = "2.10.12"
+_CBC_WINDOWS_URL = (
+    f"https://github.com/coin-or/Cbc/releases/download/releases%2F{_CBC_WINDOWS_VERSION}/"
+    f"Cbc-releases.{_CBC_WINDOWS_VERSION}-w64-msvc17-md.zip"
+)
+_CBC_WINDOWS_SHA256 = "6acf3e300945b815b2cbb2b16d3732eeeec968a4962249167827062bbf83b3a3"
 
 # Core packages that must be importable after setup
 REQUIRED_IMPORTS = [
@@ -347,35 +353,41 @@ def _windows_add_to_user_path(bin_dir: Path) -> None:
 
 def _install_cbc_windows_manual() -> bool:
     """
-    Download official CBC Windows binary, extract to LOCALAPPDATA, and add to PATH.
+    Download the official CBC Windows binary, verify its SHA-256 checksum,
+    extract to %LOCALAPPDATA%\\cbc, and add the bin directory to the user PATH.
     """
-    version = "2.10.12"
-    url = (
-        f"https://github.com/coin-or/Cbc/releases/download/releases%2F{version}/"
-        f"Cbc-releases.{version}-w64-msvc17-md.zip"
-    )
     install_dir = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "cbc"
+    tmp_path: Path | None = None
+
     try:
         _print_warn("Attempting manual CBC installation...")
         install_dir.mkdir(parents=True, exist_ok=True)
+
         fd, tmp_str = tempfile.mkstemp(suffix=".zip")
         os.close(fd)
-
         tmp_path = Path(tmp_str)
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req) as response:
+
+        print(f"  Downloading CBC {_CBC_WINDOWS_VERSION} from GitHub ...")
+        req = urllib.request.Request(_CBC_WINDOWS_URL, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=120) as response:
             with open(tmp_path, "wb") as f:
                 f.write(response.read())
 
-        if tmp_path.stat().st_size < 10_000_000:
-            _print_fail("CBC download invalid (unexpected file size)")
+        print("  Verifying CBC archive checksum ...")
+        actual_sha = _sha256(tmp_path)
+        if actual_sha.lower() != _CBC_WINDOWS_SHA256.lower():
+            _print_fail(
+                "CBC download checksum mismatch — aborting installation",
+                f"expected {_CBC_WINDOWS_SHA256}, got {actual_sha}",
+            )
             return False
+        _print_pass("CBC archive checksum verified", actual_sha)
 
+        print("  Extracting CBC ...")
         with zipfile.ZipFile(tmp_path, "r") as zf:
             _safe_extract_zip(zf, install_dir)
-        tmp_path.unlink()
 
-        bin_dir = install_dir / f"Cbc-releases.{version}-w64-msvc17-md" / "bin"
+        bin_dir = install_dir / f"Cbc-releases.{_CBC_WINDOWS_VERSION}-w64-msvc17-md" / "bin"
         if not bin_dir.exists():
             # Fallback: search extracted tree for cbc.exe
             matches = list(install_dir.rglob("cbc.exe"))
@@ -387,9 +399,17 @@ def _install_cbc_windows_manual() -> bool:
         _windows_add_to_user_path(bin_dir)
         _print_pass("CBC installed", str(bin_dir))
         return True
+
     except Exception as exc:
         _print_fail("CBC manual install failed", str(exc))
         return False
+
+    finally:
+        if tmp_path is not None and tmp_path.exists():
+            try:
+                tmp_path.unlink()
+            except OSError:
+                pass
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -611,6 +631,10 @@ def install_solvers() -> bool:
                 "No supported package manager (choco/winget) found on Windows",
                 "Install Chocolatey (https://chocolatey.org/) or install GLPK manually.",
             )
+
+            if not glpk_ok:
+                success = False
+
             if not cbc_ok:
                 if not _install_cbc_windows_manual():
                     success = False
