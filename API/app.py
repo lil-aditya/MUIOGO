@@ -105,6 +105,10 @@ def getSession():
 def setSession():
     try:
         cs = request.json['case']
+        if cs is None:
+            session.pop('osycase', None)
+            return jsonify({"osycase": None}), 200
+
         from pathlib import Path
         if not Path(Config.DATA_STORAGE, cs).is_dir():
             return jsonify({'message': 'Case not found.', 'status_code': 'error'}), 404
