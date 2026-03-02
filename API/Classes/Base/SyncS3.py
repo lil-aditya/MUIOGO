@@ -10,6 +10,13 @@ from Classes.Base import Config
 class SyncS3():
     def __init__(self):
         #S3.__init__(self)
+        if not Config.S3_KEY or not Config.S3_SECRET:
+            raise RuntimeError(
+                "S3 credentials are missing. Please set S3_KEY and S3_SECRET "
+                "via environment variables or a .env file. "
+                "See .env.example for details."
+            )
+
         self.resource = boto3.resource(
         "s3",
         aws_access_key_id=Config.S3_KEY,
@@ -21,6 +28,7 @@ class SyncS3():
             aws_access_key_id=Config.S3_KEY,
             aws_secret_access_key=Config.S3_SECRET
         )
+
 
     def getCasesSyncInit(self):
         try:
