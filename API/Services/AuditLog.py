@@ -23,7 +23,7 @@ class AuditLog:
                 entries = []
 
         entry = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "action": action,
         }
         if param:
