@@ -9,7 +9,7 @@ from Classes.Case.CaseClass import Case
 from Classes.Case.UpdateCaseClass import UpdateCase
 from Classes.Case.ImportTemplate import ImportTemplate
 from Classes.Base.SyncS3 import SyncS3
-
+from Services.AuditLog import AuditLog
 case_api = Blueprint('CaseRoute', __name__)
 
 @case_api.route("/initSyncS3", methods=['GET'])
@@ -94,6 +94,7 @@ def copy():
             genData = File.readFile(casePath)
             genData['osy-casename'] = case_copy
             File.writeFile(genData, casePath)
+            AuditLog.log(case, "copy_model", details=case_copy)
             response = {
                 "message": 'Model <b>'+ case + '</b> copied!',
                 "status_code": "success"
@@ -116,6 +117,7 @@ def deleteCase():
             return jsonify({'message': 'Unauthorised: case does not match active session.', 'status_code': 'error'}), 403
 
         casePath = Path(Config.DATA_STORAGE, case)
+        AuditLog.log(case, "delete_model")
         shutil.rmtree(casePath)
 
         session['osycase'] = None
@@ -235,6 +237,7 @@ def updateData():
         sourceData = File.readFile(dataPath)
         sourceData[param] = data
         File.writeFile(sourceData, dataPath)
+        AuditLog.log(case, "update_data", param=param, details=dataJson)
         #File.writeFileUJson(sourceData, dataPath)
         response = {
             "message": "Your data has been saved!",
@@ -243,6 +246,7 @@ def updateData():
         return jsonify(response), 200
     except(IOError):
         return jsonify('No existing cases!'), 404
+
 
 @case_api.route("/saveCase", methods=['POST'])
 def saveCase():
@@ -396,6 +400,7 @@ def saveCase():
                     "status_code": "exist"
                 }       
 
+        AuditLog.log(casename, "save_config", details=response["status_code"])
         return jsonify(response), 200
     except(IOError):
         return jsonify('Error saving model IOError!'), 404
@@ -454,7 +459,15 @@ def run():
     except(IndexError):
         return jsonify('No existing cases!'), 404
 
-
+@case_api.route("/getAuditLog", methods=['POST'])
+def getAuditLog():
+    try:
+        casename = request.json['casename']
+        limit = request.json.get('limit', 50)
+        entries = AuditLog.get_log(casename, limit)
+        return jsonify(entries), 200
+    except Exception:
+        return jsonify([]), 200
 ####################################################################################OBSOLETE AND SyncS3###################################################
 
 # @case_api.route("/getData", methods=['POST'])
