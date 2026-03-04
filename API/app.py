@@ -1,6 +1,9 @@
-#import sys
+import sys
 from pathlib import Path
 import os
+
+# Add API directory to Python path
+sys.path.append(str(Path(__file__).resolve().parent))
 
 from flask import Flask, jsonify, request, session, render_template
 from flask_cors import CORS
@@ -15,7 +18,7 @@ from Routes.Case.CaseRoute import case_api
 from Routes.Case.SyncS3Route import syncs3_api
 from Routes.Case.ViewDataRoute import viewdata_api
 from Routes.DataFile.DataFileRoute import datafile_api
-
+from Routes.ValidateRoute import validate_api
 #RADI
 # -------------------------
 # FIX: Make template/static paths independent of cwd
@@ -53,7 +56,7 @@ app.register_blueprint(case_api)
 app.register_blueprint(viewdata_api)
 app.register_blueprint(datafile_api)
 app.register_blueprint(syncs3_api)
-
+app.register_blueprint(validate_api, url_prefix="/api")
 CORS(app)
 
 #potrebno kad je front end na drugom serveru 127.0.0.1
