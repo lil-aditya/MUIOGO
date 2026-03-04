@@ -454,7 +454,51 @@ def run():
     except(IndexError):
         return jsonify('No existing cases!'), 404
 
+@case_api.route("/getModelSummary", methods=['POST'])
+def getModelSummary():
+    try:
+        casename = request.json['casename']
 
+        genDataPath = Path(Config.DATA_STORAGE, casename, 'genData.json')
+        genData = File.readFile(genDataPath)
+
+        # Count result runs
+        resDataPath = Path(Config.DATA_STORAGE, casename, 'view', 'resData.json')
+        result_count = 0
+
+        if os.path.exists(resDataPath):
+            resData = File.readFile(resDataPath)
+            result_count = len(resData.get('osy-cases', []))
+
+        # Calculate folder size
+        case_path = Path(Config.DATA_STORAGE, casename)
+        total_size = sum(
+            f.stat().st_size for f in case_path.rglob('*') if f.is_file()
+        )
+
+        summary = {
+            "casename": casename,
+            "version": genData.get('osy-version', 'unknown'),
+            "description": genData.get('osy-desc', ''),
+            "year_start": genData.get('osy-ys', ''),
+            "year_end": genData.get('osy-ye', ''),
+            "technologies": len(genData.get('osy-tech', [])),
+            "commodities": len(genData.get('osy-comm', [])),
+            "emissions": len(genData.get('osy-emis', [])),
+            "storages": len(genData.get('osy-stg', [])),
+            "timeslices": len(genData.get('osy-ts', [])),
+            "seasons": len(genData.get('osy-se', [])),
+            "constraints": len(genData.get('osy-constraints', [])),
+            "modes": genData.get('osy-mo', 0),
+            "result_runs": result_count,
+            "size_mb": round(total_size / (1024 * 1024), 2),
+        }
+
+        return jsonify(summary), 200
+
+    except (IOError, KeyError):
+        return jsonify({"error": "Could not read model"}), 404
+        
 ####################################################################################OBSOLETE AND SyncS3###################################################
 
 # @case_api.route("/getData", methods=['POST'])
