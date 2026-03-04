@@ -58,13 +58,14 @@ class SyncS3():
             if next_token:
                 kwargs['ContinuationToken'] = next_token
             results = client.list_objects_v2(**kwargs)
-            contents = results.get('Contents', [])
-            for obj in contents:
-                key = obj['Key']
-                if key.endswith('/'):
-                    dirs.append(key)
-                else:
-                    keys.append(key)
+            contents = results.get('Contents')
+            if contents:
+                for i in contents:
+                    k = i.get('Key')
+                    if k[-1] != '/':
+                        keys.append(k)
+                    else:
+                        dirs.append(k)
             next_token = results.get('NextContinuationToken')
 
         # create directories safely
@@ -83,7 +84,7 @@ class SyncS3():
             client.download_file(bucket, k, str(target))
 
     #s3.uploadSync(localDir, case, Config.S3_BUCKET, '*')
-    def uploadSync(self, localDir, awsInitDir, bucketName, tag, prefix='\\'):
+    def uploadSync(self, localDir, awsInitDir, bucketName, tag, prefix=os.sep):
         """
         from current working directory, upload a 'localDir' with all its subcontents (files and subdirectories...)
         to a aws bucket
@@ -112,7 +113,7 @@ class SyncS3():
                 fileName = str(FullfileName).replace(str(localDir), '')
                 if fileName.startswith(prefix):  # only modify the text if it starts with the prefix
                     fileName = fileName.replace(prefix, "", 1) # remove one instance of prefix
-                    fileName = fileName.replace('\\', '/')
+                    fileName = fileName.replace(os.sep, '/')
 
                 awsPath = str(awsInitDir) + '/' + str(fileName)
                 resource.meta.client.upload_file(FullfileName, bucketName, awsPath)
@@ -139,7 +140,7 @@ class SyncS3():
         """
         resource = self.resource
         fileName = localFile.name
-        localFile = str(localFile).replace('\\', '/')
+        localFile = str(localFile).replace(os.sep, '/')
         if awsInitDir != '':
             awsPath = str(awsInitDir) + '/' + str(fileName)
         else:
