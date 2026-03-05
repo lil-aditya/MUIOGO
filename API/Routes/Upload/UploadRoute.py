@@ -216,7 +216,8 @@ def backupCase():
                         #create complete filepath of file in directory
                         filePath = os.path.join(folderName, filename)
                         # Add file to zip
-                        zipObj.write(filePath)      
+                        arcname = os.path.relpath(filePath, Config.DATA_STORAGE)
+                        zipObj.write(filePath, arcname)
 
             #osemosys 2.1 backup only input files
             # for filename in os.listdir(str(casePath)):
