@@ -11,6 +11,7 @@ from Classes.Base import Config
 from Classes.Base.FileClass import File
 #added to replace unsafe ZIP extraction with safe one
 from Classes.Base.path_utils import safe_extract_zip, safe_case_path
+from werkzeug.exceptions import HTTPException
 upload_api = Blueprint('UploadRoute', __name__)
 
 #File extension checking
@@ -300,7 +301,7 @@ def uploadCaseUnchunked_old():
                                             viewDef[list['id']] = []
 
                                     try:
-                                        casePath = safe_case_path(case)
+                                        casePath = safe_case_path(casename)
                                     except ValueError:
                                         abort(400, "Invalid case path")
                                     resPath = casePath / "res"
@@ -662,6 +663,8 @@ def uploadCase():
 
     except PermissionError:
         return jsonify({"error": "Invalid path"}), 400
+    except HTTPException:
+        raise
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
