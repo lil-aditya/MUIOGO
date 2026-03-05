@@ -1,4 +1,5 @@
 import shutil
+import re
 from flask import Blueprint, request, jsonify, send_file, after_this_request
 from zipfile import ZipFile
 from pathlib import Path
@@ -549,6 +550,21 @@ def uploadCase():
         dz_total_chunks = request.form.get("dztotalchunkcount")
         file = request.files.get("file")
 
+        # Validate upload UUID to prevent path traversal
+        if dz_uuid is not None:
+            if not re.match(r'^[a-zA-Z0-9_-]+$', dz_uuid):
+                return jsonify({"error": "Invalid upload ID"}), 400
+
+            try:
+                dz_chunk_index = int(dz_chunk_index)
+                dz_total_chunks = int(dz_total_chunks)
+            except (TypeError, ValueError):
+                return jsonify({"error": "Invalid chunk parameters"}), 400
+
+            if dz_chunk_index < 0 or dz_chunk_index >= dz_total_chunks:
+                return jsonify({"error": "Invalid chunk index"}), 400
+
+
         # Ako nije chunked upload (chrome browser dev mode)
         if dz_uuid is None:
             # ==========================
@@ -606,7 +622,7 @@ def uploadCase():
         return jsonify({"error": "Invalid path"}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
 @upload_api.route('/uploadXls', methods=['POST'])
 def uploadXls():
     try: 
