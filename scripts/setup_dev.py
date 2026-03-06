@@ -506,6 +506,15 @@ def _install_glpk_windows_manual() -> bool:
             with open(tmp_path, "wb") as f:
                 f.write(response.read())
 
+        with open(tmp_path, "rb") as f:
+            magic = f.read(4)
+        if magic != b"PK\x03\x04":
+            _print_fail(
+                "GLPK download did not return a valid ZIP file",
+                "SourceForge may have returned an HTML page. Try again or download manually.",
+            )
+            return False
+
         print("  Verifying GLPK archive checksum ...")
         actual_sha = _sha1(tmp_path)
         if actual_sha.lower() != _GLPK_WINDOWS_SHA1.lower():
