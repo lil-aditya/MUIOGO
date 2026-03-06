@@ -22,8 +22,59 @@ if [ "$(uname -s)" != "Darwin" ]; then
     exit 1
 fi
 
+REAL_HOME="$(cd "$HOME" && pwd)"
+REAL_VENV_DIR="$VENV_DIR"
+
+case "$REAL_VENV_DIR" in
+    "~/"*)
+        REAL_VENV_DIR="$REAL_HOME/${REAL_VENV_DIR#~/}"
+        ;;
+esac
+
+case "$REAL_VENV_DIR" in
+    /*)
+        ;;
+    *)
+        REAL_VENV_DIR="$PWD/$REAL_VENV_DIR"
+        ;;
+esac
+
+REAL_VENV_DIR="${REAL_VENV_DIR%/}"
+REAL_VENV_BASENAME="$(basename "$REAL_VENV_DIR")"
+REAL_VENV_PARENT="$(dirname "$REAL_VENV_DIR")"
+
+if [ -z "$REAL_VENV_BASENAME" ] || [ "$REAL_VENV_BASENAME" = "." ] || [ "$REAL_VENV_BASENAME" = ".." ]; then
+    echo "ERROR: Refusing to remove unsafe venv path: $REAL_VENV_DIR"
+    exit 1
+fi
+
+if ! REAL_VENV_PARENT="$(cd "$REAL_VENV_PARENT" 2>/dev/null && pwd -P)"; then
+    echo "ERROR: Could not resolve venv parent directory: $REAL_VENV_PARENT"
+    exit 1
+fi
+
+REAL_VENV_DIR="$REAL_VENV_PARENT/$REAL_VENV_BASENAME"
+
+case "$REAL_VENV_DIR" in
+    ""|"/"|"$REAL_HOME"|"$REAL_HOME/"|"$REAL_HOME/.venvs"|"$REAL_HOME/.venvs/")
+        echo "ERROR: Refusing to remove unsafe venv path: $REAL_VENV_DIR"
+        echo "Set MUIOGO_VENV_DIR to the MUIOGO venv directory, not a parent folder."
+        exit 1
+        ;;
+esac
+
+case "$REAL_VENV_DIR" in
+    "$REAL_HOME/.venvs/"*|"$REAL_HOME/.venvs")
+        ;;
+    *)
+        echo "ERROR: Refusing to remove venv outside $REAL_HOME/.venvs: $REAL_VENV_DIR"
+        echo "Unset MUIOGO_VENV_DIR or point it at the dedicated MUIOGO venv directory."
+        exit 1
+        ;;
+esac
+
 echo "This will remove MUIOGO test state from this Mac:"
-echo "  - $VENV_DIR"
+echo "  - $REAL_VENV_DIR"
 echo "  - $ENV_FILE"
 echo "  - $DEMO_MARKER"
 echo "  - $DEMO_DIR"
@@ -52,7 +103,7 @@ remove_path() {
     fi
 }
 
-remove_path "$VENV_DIR"
+remove_path "$REAL_VENV_DIR"
 remove_path "$ENV_FILE"
 remove_path "$DEMO_MARKER"
 remove_path "$DEMO_DIR"
