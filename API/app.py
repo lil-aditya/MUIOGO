@@ -6,7 +6,6 @@ import secrets
 from flask import Flask, jsonify, request, session, render_template
 from flask_cors import CORS
 from datetime import timedelta
-from werkzeug.exceptions import RequestEntityTooLarge
 # from pathlib import Path
 
 #import json
@@ -97,21 +96,21 @@ def add_headers(response):
 def handle_bad_request(e):
     return jsonify({
         'message': 'Bad request.',
-        'status_code': 'error'
+        'status': 'error'
     }), 400
 
 @app.errorhandler(404)
 def handle_not_found(e):
     return jsonify({
         'message': 'Resource not found.',
-        'status_code': 'error'
+        'status': 'error'
     }), 404
 
 @app.errorhandler(413)
 def handle_file_too_large(e):
     return jsonify({
         'message': f'File too large. Maximum upload size is {_max_upload_mb} MB.',
-        'status_code': 'error'
+        'status': 'error'
     }), 413
 
 @app.errorhandler(500)
@@ -119,7 +118,7 @@ def handle_internal_error(e):
     app.logger.exception("Internal server error")
     return jsonify({
         'message': 'Internal server error.',
-        'status_code': 'error'
+        'status': 'error'
     }), 500
 
 #entry point to frontend
