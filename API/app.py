@@ -6,6 +6,7 @@ import secrets
 from flask import Flask, jsonify, request, session, render_template
 from flask_cors import CORS
 from datetime import timedelta
+from werkzeug.exceptions import RequestEntityTooLarge
 # from pathlib import Path
 
 #import json
@@ -56,7 +57,10 @@ if not secret_key:
 app.config['SECRET_KEY'] = secret_key
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config["MAX_CONTENT_LENGTH"] = None
+
+# Upload size limit — configurable via env var (in MB), default 50 MB
+_max_upload_mb = int(os.environ.get("MUIOGO_MAX_UPLOAD_MB", 50))
+app.config["MAX_CONTENT_LENGTH"] = _max_upload_mb * 1024 * 1024
 
 app.register_blueprint(upload_api)
 app.register_blueprint(case_api)
@@ -85,6 +89,38 @@ def add_headers(response):
 #     response = jsonify(error.to_dict())
 #     response.status_code = error.status_code
 #     return response
+
+# -------------------------
+# Standardized JSON error handlers
+# -------------------------
+@app.errorhandler(400)
+def handle_bad_request(e):
+    return jsonify({
+        'message': 'Bad request.',
+        'status_code': 'error'
+    }), 400
+
+@app.errorhandler(404)
+def handle_not_found(e):
+    return jsonify({
+        'message': 'Resource not found.',
+        'status_code': 'error'
+    }), 404
+
+@app.errorhandler(413)
+def handle_file_too_large(e):
+    return jsonify({
+        'message': f'File too large. Maximum upload size is {_max_upload_mb} MB.',
+        'status_code': 'error'
+    }), 413
+
+@app.errorhandler(500)
+def handle_internal_error(e):
+    app.logger.exception("Internal server error")
+    return jsonify({
+        'message': 'Internal server error.',
+        'status_code': 'error'
+    }), 500
 
 #entry point to frontend
 @app.route("/", methods=['GET'])
@@ -145,6 +181,7 @@ if __name__ == '__main__':
         print(f"Mode: {mode}")
         print(f"Host: {host}")
         print(f"Port: {current_port}")
+        print(f"Max upload: {_max_upload_mb} MB")
         print(f"Open: http://{access_host}:{current_port}")
 
     if Config.HEROKU_DEPLOY == 0: 
