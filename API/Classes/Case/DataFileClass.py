@@ -82,6 +82,7 @@ class DataFile(Osemosys):
         r = self.R(File.readFile(self.rPath))
         for id, param in self.PARAM['R'].items():
             self.f.write('{} {} {} {} {} {}'.format('param', param,'default', self.defaultValue[id], ':=','\n'))
+            tmp = self.defaultValue[id]
             for sc in self.scOrder:
                 if r[id][sc['ScId']]['value'] is not None and sc['Active'] == True:
                     tmp = r[id][sc['ScId']]['value']
@@ -106,6 +107,7 @@ class DataFile(Osemosys):
             self.f.write('{} {} {} {} {} {}'.format('param', param,'default', self.defaultValue[id], ':','\n'))
             self.f.write('{}{}{}'.format(self.years, ':=', '\n'))
             ryString = ''
+            tmp = self.defaultValue[id]
             for yearId in self.yearIDs:
                 for sc in self.scOrder:
                     if ry[id][sc['ScId']][yearId] is not None and sc['Active'] == True:
@@ -120,6 +122,7 @@ class DataFile(Osemosys):
             self.f.write('{} {} {} {} {} {}'.format('param', param,'default', self.defaultValue[id], ':','\n'))
             self.f.write('{}{}{}'.format(self.techs, ':=', '\n'))
             rtString = ''
+            tmp = self.defaultValue[id]
             for techId in self.techIDs:
                 for sc in self.scOrder:
                     if rt[id][sc['ScId']][techId] is not None and sc['Active'] == True:
@@ -134,6 +137,7 @@ class DataFile(Osemosys):
             self.f.write('{} {} {} {} {} {}'.format('param', param,'default', self.defaultValue[id], ':','\n'))
             self.f.write('{}{}{}'.format(self.emis, ':=', '\n'))
             reString = ''
+            tmp = self.defaultValue[id]
             for emiId in self.emiIDs:
                 for sc in self.scOrder:
                     if re[id][sc['ScId']][emiId] is not None and sc['Active'] == True:
@@ -148,6 +152,7 @@ class DataFile(Osemosys):
             self.f.write('{} {} {} {} {} {}'.format('param', param,'default', self.defaultValue[id], ':','\n'))
             self.f.write('{}{}{}'.format(self.stgs, ':=', '\n'))
             rsString = ''
+            tmp = self.defaultValue[id]
             for stgId in self.stgIDs:
                 for sc in self.scOrder:
                     if re[id][sc['ScId']][stgId] is not None and sc['Active'] == True:
@@ -169,7 +174,7 @@ class DataFile(Osemosys):
                     # self.f.write('{}{}'.format('[RE1,'+ self.techMap[activityTechId] + ','+ self.commMap[activityCommId] +',*,*]:', '\n'))
                     # self.f.write('{}{}{}'.format( self.years, ':=', '\n'))
                     for mod in self.modIds:
-                        
+                        tmp = self.defaultValue[id]
                         
                         # for yearId in self.yearIDs:
                         for sc in self.scOrder:
@@ -195,6 +200,7 @@ class DataFile(Osemosys):
             self.f.write('{}{}{}'.format( self.years, ':=', '\n'))
             for conId in self.conIDs:
                 rycnString = ''
+                tmp = self.defaultValue[id]
                 for yearId in self.yearIDs:
                     for sc in self.scOrder:
                         if rycn[id][sc['ScId']][yearId][conId] is not None and sc['Active'] == True:
@@ -211,6 +217,7 @@ class DataFile(Osemosys):
             for timesliceId in self.timesliceIDs:
                 rytsString = ''
                 #defaultValueFlag = False
+                tmp = self.defaultValue[id]
                 for yearId in self.yearIDs:
                     for sc in self.scOrder:
                         rytsValue = ryts[id][sc['ScId']][yearId][timesliceId]
@@ -231,6 +238,7 @@ class DataFile(Osemosys):
             for dtbId in self.dtbIDs:
                 rydtbString = ''
                 #defaultValueFlag = False
+                tmp = self.defaultValue[id]
                 for yearId in self.yearIDs:
                     for sc in self.scOrder:
                         rydtbValue = rydtb[id][sc['ScId']][yearId][dtbId]
@@ -254,6 +262,7 @@ class DataFile(Osemosys):
                 for dtId in self.dtIDs:
                     rysedtString = ''
                     defaultValueFlag = False
+                    tmp = self.defaultValue[id]
                     for yearId in self.yearIDs:
                         for sc in self.scOrder:
                             rysedtValue = rysedt[id][sc['ScId']][yearId][seId][dtId]
@@ -280,6 +289,7 @@ class DataFile(Osemosys):
             for techId in self.techIDs:
                 rytString = ''
                 defaultValueFlag = False
+                tmp = self.defaultValue[id]
                 for yearId in self.yearIDs:
                     for sc in self.scOrder:
                         rytValue = ryt[id][sc['ScId']][yearId][techId]
@@ -306,6 +316,7 @@ class DataFile(Osemosys):
             for stgId in self.stgIDs:
                 rysString = ''
                 defaultValueFlag = False
+                tmp = self.defaultValue[id]
                 for yearId in self.yearIDs:
                     for sc in self.scOrder:
                         rysValue = rys[id][sc['ScId']][yearId][stgId]
@@ -336,6 +347,7 @@ class DataFile(Osemosys):
                         # self.f.write('{}{}'.format('[RE1,'+ self.techMap[constraintTechId] +',*,*]:', '\n'))
                         # self.f.write('{}{}{}'.format( self.years, ':=', '\n'))
                         rytcnString = ''
+                        tmp = self.defaultValue[id]
                         for yearId in self.yearIDs:
                             for sc in self.scOrder:
                                 rytcnValue = rytcn[id][sc['ScId']][yearId][constraintTechId][conId]
@@ -364,6 +376,7 @@ class DataFile(Osemosys):
                 for mod in self.modIds:
                     rytmString = ''
                     defaultValueFlag = False
+                    tmp = self.defaultValue[id]
                     for yearId in self.yearIDs:
                         for sc in self.scOrder:
                             rytmValue = rytm[id][sc['ScId']][yearId][techId][mod]
@@ -390,6 +403,7 @@ class DataFile(Osemosys):
             for commId in self.commIDs:
                 rycString = ''
                 defaultValueFlag = False
+                tmp = self.defaultValue[id]
                 for yearId in self.yearIDs:
                     for sc in self.scOrder:
                         rycValue = ryc[id][sc['ScId']][yearId][commId]
@@ -416,6 +430,7 @@ class DataFile(Osemosys):
             for emiId in self.emiIDs:
                 ryeString = ''
                 defaultValueFlag = False
+                tmp = self.defaultValue[id]
                 for yearId in self.yearIDs:
                     for sc in self.scOrder:
                         ryeValue = rye[id][sc['ScId']][yearId][emiId]
@@ -441,6 +456,7 @@ class DataFile(Osemosys):
                 for inputCapCommId in self.inputCapCommIds[id][inputCapTechId]:
                     rytcString = ''
                     defaultValueFlag = False
+                    tmp = self.defaultValue[id]
                     for yearId in self.yearIDs:
                         for sc in self.scOrder:
                             rytcValue = rytc[id][sc['ScId']][yearId][inputCapTechId][inputCapCommId]
@@ -469,6 +485,7 @@ class DataFile(Osemosys):
                     for mod in self.modIds:
                         rytcString = ''
                         defaultValueFlag = False
+                        tmp = self.defaultValue[id]
                         for yearId in self.yearIDs:
                             for sc in self.scOrder:
                                 rytcmValue = rytcm[id][sc['ScId']][yearId][activityTechId][activityCommId][mod]
@@ -498,6 +515,7 @@ class DataFile(Osemosys):
                     for mod in self.modIds:
                         rytcString = ''
                         defaultValueFlag = False
+                        tmp = self.defaultValue[id]
                         for yearId in self.yearIDs:
                             for sc in self.scOrder:
                                 rytsmValue = rytsm[id][sc['ScId']][yearId][stgId][storageTechId][mod]
@@ -523,6 +541,7 @@ class DataFile(Osemosys):
                 for activityEmissionId in self.activityEmissionIDs[id][emissionTechId]:
                     defaultValueFlag = False
                     ryteString = ''
+                    tmp = self.defaultValue[id]
                     for yearId in self.yearIDs:
                         for sc in self.scOrder:
                             ryteValue = ryte[id][sc['ScId']][yearId][emissionTechId][activityEmissionId]
@@ -551,6 +570,7 @@ class DataFile(Osemosys):
                     for mod in self.modIds:
                         ryteString = ''
                         defaultValueFlag = False
+                        tmp = self.defaultValue[id]
                         for yearId in self.yearIDs:
                             for sc in self.scOrder:
                                 rytemValue = rytem[id][sc['ScId']][yearId][emissionTechId][activityEmissionId][mod]
@@ -578,6 +598,7 @@ class DataFile(Osemosys):
                 for timesliceId in self.timesliceIDs:
                     ryttsString = ''
                     defaultValueFlag = False
+                    tmp = self.defaultValue[id]
                     for yearId in self.yearIDs:
                         for sc in self.scOrder:
                             ryttsValue =  rytts[id][sc['ScId']][yearId][techId][timesliceId]
@@ -605,6 +626,7 @@ class DataFile(Osemosys):
                 for timesliceId in self.timesliceIDs:
                     ryctsString = ''
                     defaultValueFlag = False
+                    tmp = self.defaultValue[id]
                     for yearId in self.yearIDs:
                         for sc in self.scOrder:
                             ryctsValue = rycts[id][sc['ScId']][yearId][commId][timesliceId]
