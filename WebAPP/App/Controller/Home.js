@@ -117,6 +117,11 @@ export default class Home {
         $(document).delegate(".copyCS","click",function(e){
             e.stopImmediatePropagation();
             var casename = $(this).attr('data-ps');
+            if (casename !== model.casename) {
+                Message.bigBoxWarning('Copy message',
+                    'Select <b>' + casename + '</b> first to copy it.', 4000);
+                return;
+            }
             Base.copyCaseStudy(casename)
             .then(response => {
                 Message.clearMessages();
@@ -157,6 +162,12 @@ export default class Home {
         //delete case
         $(document).delegate(".deleteModel","click",function(e){
             var casename = $(this).attr('data-ps');
+            if (casename !== model.casename) {
+                Message.bigBoxWarning('Delete message',
+                    'Select <b>' + casename + '</b> first to delete it.', 4000);
+                e.stopImmediatePropagation();
+                return;
+            }
             $.SmartMessageBox({
                 title : "Confirmation Box!",
                 content : "You are about to delete <b class='danger'>" + casename + "</b> Model! Are you sure?",
@@ -166,27 +177,14 @@ export default class Home {
                     Base.deleteCaseStudy(casename)
                     .then(response => {
                         Message.clearMessages();
-                        if(response.status_code=="success"){
-                            Message.bigBoxSuccess('Delete message', response.message, 3000);
-                            //REFRESH
-                            Html.removeCase(casename);
-                            //sync with s3
-                            if (Base.AWS_SYNC == 1){
-                                SyncS3.deleteSync(casename);
-                            }
-                        }
                         if(response.status_code=="success_session"){
                             Message.bigBoxSuccess('Delete message', response.message, 3000);
                             Message.info( "Please select existing or create new case to proceed!");
-                            if (model.casename = casename){
-                                // Sidebar.Load(null, null);
-                                Sidebar.Reload(null);
-                                //Routes.removeRoutes(model.PARAMETERS);
-                            }
+                            Sidebar.Reload(null);
                             //REFRESH
                             Html.removeCase(casename);
                             if (Base.AWS_SYNC == 1){
-                                Base.deleteSync(casename);
+                                SyncS3.deleteSync(casename);
                             }
                         }
                         if(response.status_code=="info"){
