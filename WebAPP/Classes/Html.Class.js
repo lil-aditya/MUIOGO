@@ -170,35 +170,41 @@ export class Html {
 
     }
 
+    static renderTextStatus(containerSelector, message, level = 'info') {
+        const container = document.querySelector(containerSelector);
+        if (!container) {
+            return;
+        }
+
+        container.textContent = '';
+
+        const status = document.createElement('div');
+        status.className = `alert alert-${level}`;
+        status.textContent = message;
+        container.appendChild(status);
+    }
+
+    static renderPlainText(containerSelector, text, emptyMessage = 'No content available.') {
+        const container = document.querySelector(containerSelector);
+        if (!container) {
+            return;
+        }
+
+        container.textContent = '';
+
+        if (!text || !text.trim()) {
+            Html.renderTextStatus(containerSelector, emptyMessage, 'info');
+            return;
+        }
+
+        const pre = document.createElement('pre');
+        pre.className = 'log-output';
+        pre.textContent = text;
+        container.appendChild(pre);
+    }
+
     static renderDataFile(DataFile, model){
-
-        $("#osy-DataFile").empty();
-        $("#osy-DataFile").html('');
-
-        // var table = $("<table />");
-        // var rows = DataFile.split("\n"); 
-
-        // if(rows.length < 2500){
-        //     for (var i = 0; i < rows.length; i++) {
-        //         var row = $("<tr />");
-        //         var cells = rows[i].split(" ");
-        //         //var cells = rows[i].match(/.{1,50}/g);
-        //         if (cells !== null){
-        //             for (var j = 0; j < cells.length; j++) {
-        //                 var cell = $(" <td style='padding-right:5px'></td>");
-        //                 //cells[j] = cells[j].replace(/ /g, '&nbsp;');
-        //                 cell.html(cells[j]);
-        //                 row.append(cell);
-        //             }
-        //             table.append(row);
-        //         }
-        //     }
-        //     $("#osy-DataFile").append(table);
-        // }else{
-        //     $("#osy-DataFile").html('Data file is to large for preview.');
-        // }
-
-        $("#osy-DataFile").html('<pre class="log-output">'+DataFile+'</pre>');
+        Html.renderPlainText('#osy-DataFile', DataFile, 'Data file preview is empty.');
 
         $('#tabs a[href="#tabDataFile"]').tab('show');
 
@@ -207,6 +213,14 @@ export class Html {
                 File
             </a>`);
 
+    }
+
+    static renderModelFile(modelFile, emptyMessage = 'Model file is empty.') {
+        Html.renderPlainText('#osy-ModelFile', modelFile, emptyMessage);
+    }
+
+    static renderLogFile(logFile, emptyMessage = 'Log file is empty.') {
+        Html.renderPlainText('#osy-logFiletxt', logFile, emptyMessage);
     }
 
     static appendCasePicker(value, selectedCS, pageId) {

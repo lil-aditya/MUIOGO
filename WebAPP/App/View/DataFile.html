@@ -207,6 +207,16 @@
                         </li>
 
                         <li class="pull-right">
+                            <a href="#/ModelFile" id="osy-openModelFilePage"
+                                class="btn btn-white btn-default btn-bold">
+                                <i class="fa fa-superscript fa-lg text-warning"></i> EQUATIONS
+                            </a>
+                            <button id="osy-viewModel" class="btn btn-white btn-default btn-bold">
+                                <i class="fa fa-cogs fa-lg text-danger"></i> VIEW MODEL
+                            </button>
+                            <button id="osy-viewLog" class="btn btn-white btn-default btn-bold">
+                                <i class="fa fa-clipboard fa-lg text-info"></i> VIEW LOG
+                            </button>
                             <button id="osy-batchRun" class="btn btn-white btn-default btn-bold"
                                 style="display: none;">
                                 <i class="fa fa-play-circle fa-lg osy-second-color"></i> BATCH RUN
@@ -347,6 +357,11 @@
                     <i class="fa fa-times fa-lg" aria-hidden="true"></i> Cancel
                 </button>
 
+                <button type="button" class="btn btn-white btn-default pull-right" id="toggle-all">
+                    <i class="fa fa-square-o fa-lg osy-second-color" aria-hidden="true"></i>
+                    <span>Check all</span>
+                </button>
+
                 <button type="button" class="btn btn-white btn-default pull-right" id='btnSaveOrder'>
                     <i class="fa fa-save fa-lg"></i> Save
                 </button>
@@ -361,6 +376,56 @@
                         <div class="col-md-10 col-lg-10 col-md-offset-1 col-lg-offset-1 ">
                             <div id='osy-sc0'></div>
                             <div id='osy-scOrder'></div>
+                        </div>
+                    </div>
+                </fieldset>
+                <footer></footer>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="osy-ModelFileModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-wide">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+                    &times;
+                </button>
+                <h4 class="modal-title">
+                    <i class="fa fa-cogs fa-lg text-danger" aria-hidden="true"></i> Model file
+                </h4>
+            </div>
+            <div class="modal-body" style="padding-top: 0px;">
+                <fieldset style="padding-top: 15px;">
+                    <div class="row">
+                        <div class="col-md-12 col-lg-12">
+                            <div id='osy-ModelFile'></div>
+                        </div>
+                    </div>
+                </fieldset>
+                <footer></footer>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="osy-LogFileModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-wide">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+                    &times;
+                </button>
+                <h4 class="modal-title">
+                    <i class="fa fa-clipboard fa-lg text-info" aria-hidden="true"></i> Log file
+                </h4>
+            </div>
+            <div class="modal-body" style="padding-top: 0px;">
+                <fieldset style="padding-top: 15px;">
+                    <div class="row">
+                        <div class="col-md-12 col-lg-12">
+                            <div id='osy-logFiletxt'></div>
                         </div>
                     </div>
                 </fieldset>

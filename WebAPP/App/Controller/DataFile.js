@@ -94,6 +94,43 @@ export default class DataFile {
             })
     }
 
+    static openTextViewer(modalSelector, containerSelector, fetchText, renderText, loadingMessage, emptyMessage) {
+        Html.renderTextStatus(containerSelector, loadingMessage, 'info');
+        $(modalSelector).modal('show');
+
+        return fetchText()
+            .then(text => {
+                renderText(text, emptyMessage);
+            })
+            .catch(error => {
+                const message = error instanceof Error ? error.message : String(error);
+                Html.renderTextStatus(containerSelector, message || 'Unable to load diagnostics output.', 'danger');
+            });
+    }
+
+    static syncScenarioToggleButton() {
+        const toggleButton = document.getElementById('toggle-all');
+        if (!toggleButton) {
+            return;
+        }
+
+        const checkboxes = Array.from(document.querySelectorAll('#osy-scOrder input[type="checkbox"]:not(:disabled)'));
+        const icon = toggleButton.querySelector('i.fa');
+        const label = toggleButton.querySelector('span');
+        const allChecked = checkboxes.length > 0 && checkboxes.every(checkbox => checkbox.checked);
+
+        toggleButton.disabled = checkboxes.length === 0;
+
+        if (icon) {
+            icon.classList.toggle('fa-check-square-o', allChecked);
+            icon.classList.toggle('fa-square-o', !allChecked);
+        }
+
+        if (label) {
+            label.textContent = allChecked ? 'Uncheck all' : 'Check all';
+        }
+    }
+
     static initEvents(model) {
 
         $("#casePicker").off('click');
@@ -106,6 +143,32 @@ export default class DataFile {
             Message.smallBoxInfo("Case selection", casename + " is selected!", 3000);
         });
 
+        $("#osy-viewModel").off('click');
+        $("#osy-viewModel").on('click', function (event) {
+            event.preventDefault();
+            DataFile.openTextViewer(
+                '#osy-ModelFileModal',
+                '#osy-ModelFile',
+                () => Osemosys.readModelFile(),
+                Html.renderModelFile.bind(Html),
+                'Loading model file...',
+                'Model file is empty.'
+            );
+        });
+
+        $("#osy-viewLog").off('click');
+        $("#osy-viewLog").on('click', function (event) {
+            event.preventDefault();
+            DataFile.openTextViewer(
+                '#osy-LogFileModal',
+                '#osy-logFiletxt',
+                () => Osemosys.readLogFile(),
+                Html.renderLogFile.bind(Html),
+                'Loading log file...',
+                'Log file is empty.'
+            );
+        });
+
         $("#osy-btnScOrder").off('click');
         $("#osy-btnScOrder").on('click', function (event) {
             // console.log('model, ', model)
@@ -116,6 +179,7 @@ export default class DataFile {
             }else{
                 Html.renderScOrder(model.scenarios);
             }
+            DataFile.syncScenarioToggleButton();
 
             //nove scenarije dodjeamo sad u modelu ovaj dio je nepotreban
             // if(model.cs in  model.scBycs){
@@ -143,10 +207,25 @@ export default class DataFile {
 
         });
 
+        $("#toggle-all").off('click');
+        $("#toggle-all").on('click', function (event) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+
+            const checkboxes = Array.from(document.querySelectorAll('#osy-scOrder input[type="checkbox"]:not(:disabled)'));
+            const shouldCheckAll = checkboxes.some(checkbox => !checkbox.checked);
+
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = shouldCheckAll;
+            });
+
+            DataFile.syncScenarioToggleButton();
+        });
+
         $("#btnSaveOrder").off('click');
         $("#btnSaveOrder").on('click', function (event) {
             Message.clearMessages();
-            Message.bigBoxSuccess('Sceanario order', 'You have updated scenarios order data!', 3000);
+            Message.bigBoxWarning('Scenario order updated', 'You have updated the scenario order. Click Update case to persist the change.', 4000);
             $('#osy-order').modal('toggle');
 
             //nema potrebe da spasavmo scenario order jer se on ada nalazi u resData

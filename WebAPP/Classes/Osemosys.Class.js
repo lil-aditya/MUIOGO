@@ -288,6 +288,45 @@ export class Osemosys {
         });
     }
 
+    static _readTextEndpoint(endpoint, fallbackMessage) {
+        return fetch(Base.apiUrl() + endpoint, {
+            method: "GET",
+            cache: "no-store",
+            credentials: "include"
+        })
+        .then(async response => {
+            const rawBody = await response.text();
+
+            if (!response.ok) {
+                let message = fallbackMessage;
+                const contentType = response.headers.get("content-type") || "";
+
+                if (contentType.includes("application/json")) {
+                    try {
+                        const errorBody = JSON.parse(rawBody);
+                        message = errorBody.message || errorBody.status_code || rawBody || fallbackMessage;
+                    } catch (error) {
+                        message = rawBody || fallbackMessage;
+                    }
+                } else if (rawBody) {
+                    message = rawBody;
+                }
+
+                throw new Error(message);
+            }
+
+            return rawBody;
+        });
+    }
+
+    static readModelFile() {
+        return this._readTextEndpoint("readModelFile", "Could not load model file.");
+    }
+
+    static readLogFile() {
+        return this._readTextEndpoint("readLogFile", "Could not load log file.");
+    }
+
     static readDataFile(casename, caserunname) {
         return new Promise((resolve, reject) => {
             $.ajax({
