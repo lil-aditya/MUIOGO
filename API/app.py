@@ -3,6 +3,8 @@ import logging
 import os
 import secrets
 import sys
+import warnings
+from logging.handlers import TimedRotatingFileHandler
 
 # Fail fast: unsupported Python hits cryptic pandas/numpy import errors without this.
 SUPPORTED_PYTHON_MIN = (3, 10)
@@ -60,13 +62,57 @@ static_dir = str(WEBAPP_PATH)
 # template_dir = 'WebAPP'
 # static_dir = '../WebAPP'
 
+
+def _configure_logging():
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+    formatter = logging.Formatter("%(asctime)s [%(name)s] %(levelname)s: %(message)s")
+
+    has_console_handler = any(
+        isinstance(handler, logging.StreamHandler)
+        and not isinstance(handler, logging.FileHandler)
+        for handler in root_logger.handlers
+    )
+    if not has_console_handler:
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        root_logger.addHandler(console_handler)
+
+    try:
+        Config.LOG_DIR.mkdir(parents=True, exist_ok=True)
+        log_path = Config.APP_LOG_FILE.resolve(strict=False)
+        has_file_handler = any(
+            isinstance(handler, logging.FileHandler)
+            and Path(getattr(handler, "baseFilename", "")).resolve(strict=False) == log_path
+            for handler in root_logger.handlers
+        )
+        if not has_file_handler:
+            file_handler = TimedRotatingFileHandler(
+                log_path,
+                when="midnight",
+                interval=1,
+                backupCount=7,
+                encoding="utf-8",
+            )
+            file_handler.setFormatter(formatter)
+            root_logger.addHandler(file_handler)
+    except OSError as exc:
+        root_logger.warning("File logging disabled for %s: %s", Config.APP_LOG_FILE, exc)
+
+    logging.captureWarnings(True)
+    warnings.simplefilter("default")
+    return logging.getLogger(__name__)
+
+
+logger = _configure_logging()
+
 app = Flask(__name__, static_url_path='', static_folder=static_dir,  template_folder=template_dir)
 
 app.permanent_session_lifetime = timedelta(days=5)
 secret_key = os.environ.get("MUIOGO_SECRET_KEY", "").strip()
 if not secret_key:
     secret_key = secrets.token_hex(32)
-    logging.warning(
+    logger.warning(
         "MUIOGO_SECRET_KEY is not configured. Using a temporary in-memory key. "
         "Run setup to create a persistent secret in .env."
     )

@@ -1,10 +1,32 @@
-from flask import Blueprint, jsonify, request, send_file, session
+from flask import Blueprint, Response, jsonify, request, send_file, session
 from pathlib import Path
-import shutil, datetime, time, os
+import logging
+import time
 from Classes.Case.DataFileClass import DataFile
 from Classes.Base import Config
 
 datafile_api = Blueprint('DataFileRoute', __name__)
+logger = logging.getLogger(__name__)
+
+
+def _resolve_allowed_file(allowed_root: Path, candidate: Path) -> Path:
+    safe_root = allowed_root.resolve(strict=False)
+    safe_path = candidate.resolve(strict=False)
+    try:
+        safe_path.relative_to(safe_root)
+    except ValueError as exc:
+        raise PermissionError(f"Refusing to read outside {safe_root}") from exc
+
+    if not safe_path.is_file():
+        raise FileNotFoundError(safe_path)
+
+    return safe_path
+
+
+def _read_text_response(allowed_root: Path, candidate: Path) -> Response:
+    safe_path = _resolve_allowed_file(allowed_root, candidate)
+    text = safe_path.read_text(encoding="utf-8", errors="replace")
+    return Response(text, content_type="text/plain; charset=utf-8")
 
 @datafile_api.route("/generateDataFile", methods=['POST'])
 def generateDataFile():
@@ -63,17 +85,6 @@ def deleteCaseRun():
 
         if not casename:
             return jsonify({'message': 'No model selected.', 'status_code': 'error'}), 400
-
-        casePath = Path(Config.DATA_STORAGE, casename, 'res', caserunname)
-        if not resultsOnly:
-            shutil.rmtree(casePath)
-        else:
-            for item in os.listdir(casePath):
-                item_path = os.path.join(casePath, item)
-                if os.path.isfile(item_path) or os.path.islink(item_path):
-                    os.remove(item_path)
-                elif os.path.isdir(item_path):
-                    shutil.rmtree(item_path)
 
         caserun = DataFile(casename)
         response = caserun.deleteCaseRun(caserunname, resultsOnly)
@@ -141,6 +152,26 @@ def readDataFile():
         return jsonify(response), 200
     except(IOError):
         return jsonify('No existing cases!'), 404
+
+
+@datafile_api.route("/readModelFile", methods=['GET'])
+def readModelFile():
+    try:
+        return _read_text_response(Config.SOLVERs_FOLDER, Config.SOLVER_MODEL_FILE)
+    except FileNotFoundError:
+        return jsonify({'message': 'Model file not found.', 'status_code': 'error'}), 404
+    except PermissionError:
+        return jsonify({'message': 'Access denied.', 'status_code': 'error'}), 403
+
+
+@datafile_api.route("/readLogFile", methods=['GET'])
+def readLogFile():
+    try:
+        return _read_text_response(Config.LOG_DIR, Config.APP_LOG_FILE)
+    except FileNotFoundError:
+        return jsonify({'message': 'Log file not found.', 'status_code': 'error'}), 404
+    except PermissionError:
+        return jsonify({'message': 'Access denied.', 'status_code': 'error'}), 403
     
 @datafile_api.route("/validateInputs", methods=['POST'])
 def validateInputs():
@@ -218,8 +249,20 @@ def run():
         casename = request.json['casename']
         caserunname = request.json['caserunname']
         solver = request.json['solver']
+        logger.info(
+            "Starting optimization for model=%s caserun=%s solver=%s",
+            casename,
+            caserunname,
+            solver,
+        )
         txtFile = DataFile(casename)
-        response = txtFile.run(solver, caserunname)     
+        response = txtFile.run(solver, caserunname)
+        logger.info(
+            "Finished optimization for model=%s caserun=%s status=%s",
+            casename,
+            caserunname,
+            response.get("status_code", "unknown"),
+        )
         return jsonify(response), 200
     # except Exception as ex:
     #     print(ex)
@@ -236,11 +279,18 @@ def batchRun():
         cases = request.json['cases']
 
         if modelname != None:
+            logger.info("Starting batch run for model=%s case_count=%s", modelname, len(cases))
             txtFile = DataFile(modelname)
             for caserun in cases:
+                logger.info("Generating data file for model=%s caserun=%s", modelname, caserun)
                 txtFile.generateDatafile(caserun)
 
             response = txtFile.batchRun( 'CBC', cases) 
+            logger.info(
+                "Finished batch run for model=%s status=%s",
+                modelname,
+                response.get("status", "unknown"),
+            )
         end = time.time()  
         response['time'] = end-start 
         return jsonify(response), 200
@@ -254,7 +304,9 @@ def cleanUp():
 
         if modelname != None:
             model = DataFile(modelname)
-            response = model.cleanUp()    
+            logger.info("Starting clean up for model=%s", modelname)
+            response = model.cleanUp()
+            logger.info("Finished clean up for model=%s", modelname)
 
         return jsonify(response), 200
     except(IOError):
