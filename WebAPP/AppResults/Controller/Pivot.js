@@ -9,6 +9,9 @@ import { DataModelResult } from "../../Classes/DataModelResult.Class.js";
 import { DefaultObj } from "../../Classes/DefaultObj.Class.js";
 
 export default class Pivot {
+    // Only Unit requires HTML (e.g. 10<sup>6</sup>). Keep all user/model-provided text as plain.
+    static ALLOW_HTML_FIELDS = ['Unit'];
+
     static enableHtmlField(engine, fieldName) {
         const field = engine.fields.getField(fieldName);
         if (field) {
@@ -17,7 +20,7 @@ export default class Pivot {
     }
 
     static enableHtmlFields(engine) {
-        ['Unit', 'Tech', 'Tech Desc', 'Comm', 'Comm Desc', 'Emi', 'Emi Desc', 'Stg', 'Stg Desc', 'Con', 'Con Desc'].forEach(function (fieldName) {
+        Pivot.ALLOW_HTML_FIELDS.forEach(function (fieldName) {
             Pivot.enableHtmlField(engine, fieldName);
         });
     }

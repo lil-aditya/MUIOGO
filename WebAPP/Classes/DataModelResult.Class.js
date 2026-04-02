@@ -1,4 +1,3 @@
-
 import { DataModel} from "./DataModel.Class.js"
 import { UNITDEFINITION, VAR_TECH_GROUPS, VAR_COMM_GROUPS, VAR_EMIS_GROUPS, VAR_STORAGE_GROUPS } from "./Const.Class.js";
 
@@ -151,9 +150,35 @@ export class DataModelResult{
         const data = Object.assign({}, ...contexts.filter(context => context));
         const unit = jsonLogic.apply(rule, data);
 
-        if (unit === null || typeof unit === 'undefined' || unit === '') {
+        // jsonLogic may return arrays (token sequences) or objects.
+        // Normalize to a displayable string and guard against empty results.
+        if (Array.isArray(unit)) {
+            if (unit.length === 0) {
+                return 'n/a';
+            }
+            const parts = unit
+                .flat()
+                .map(part => (part === null || typeof part === 'undefined') ? '' : String(part).trim())
+                .filter(part => part !== '');
+            return parts.length ? parts.join(' ') : 'n/a';
+        }
+
+        if (unit === null || typeof unit === 'undefined') {
             return 'n/a';
         }
+
+        if (typeof unit === 'string') {
+            return unit.trim() === '' ? 'n/a' : unit;
+        }
+
+        if (typeof unit === 'object') {
+            try {
+                return JSON.stringify(unit);
+            } catch (err) {
+                return 'n/a';
+            }
+        }
+
         return unit;
     }
 
@@ -252,7 +277,7 @@ export class DataModelResult{
                         //     dataT = unitData[group][param][obj.Tech];
                         // }
     
-                        //provjera da li u obj ima Comm, Tech, Stg, Emi... Redosljed je bitan za one varijable koje zavise vise od jednog seta, definicja 
+                        //provjera da li u obj ima Comm, Tech, Stg, Emi... Redosljed je bitan za one varijable koje zavise vise od jednog seta, definicija 
                         //unita ce da zavisi od toga
        
                         if(obj.MoId){
@@ -711,14 +736,12 @@ export class DataModelResult{
     }
 
     static RYTMchart(genData, RYTMdata){
-        let RYTM = this.RYTM(RYTMdata);
-        let mods = DataModel.Mods(genData);
         let RYTMchart = {};
-
-        $.each(RYTMdata, function (param, obj) {
+        let RYTM = this.RYTM(RYTMdata);
+        $.each(RYTM, function (param, obj1) {
             let chartData = {}
     
-            $.each(obj, function (cs, obj1) {
+            $.each(obj1, function (cs, obj2) {
                 chartData[cs] = {};
                 $.each(mods, function (idS, mo) {   
                     chartData[cs][mo] = []; 
@@ -755,9 +778,9 @@ export class DataModelResult{
                 RYTC[param][cs] = {};
                 $.each(array, function (id, obj) {
                     if(!RYTC[param][cs][obj.Tech]){ RYTC[param][cs][obj.Tech] = {}; }
-                        RYTC[param][cs][obj.Tech][obj.Comm] = obj;
-                        delete obj.Tech;
-                        delete obj.Comm;   
+                    RYTC[param][cs][obj.Tech][obj.Comm] = obj;
+                    delete obj.Tech;
+                    delete obj.Comm;   
                 });
             });
         });
@@ -862,37 +885,37 @@ export class DataModelResult{
         return RYTCchart;
     }
 
-    static RYTE(RYTEdata){
-        let RYTE = {};
-        const cloneData = JSON.parse(JSON.stringify(RYTEdata));
+    static RYTE(RYEdata){
+        let RYE = {};
+        const cloneData = JSON.parse(JSON.stringify(RYEdata));
         $.each(cloneData, function (param, obj1) {
-            RYTE[param] = {};
+            RYE[param] = {};
             $.each(obj1, function (sc, array) {
-                RYTE[param][sc] = {};
+                RYE[param][sc] = {};
                 $.each(array, function (id, obj) {
-                    if(!RYTE[param][sc][obj.Tech]){ RYTE[param][sc][obj.Tech] = {}; }
-                        RYTE[param][sc][obj.Tech][obj.Emi] = obj;
+                    if(!RYE[param][sc][obj.Tech]){ RYE[param][sc][obj.Tech] = {}; }
+                        RYE[param][sc][obj.Tech][obj.Emi] = obj;
                         delete obj.Tech;
                         delete obj.Emis;   
                 });
             });
         });
-        return RYTE;
+        return RYE;
     }
 
-    static RYTEgrid(RYTEdata, genData, PARAMETERS){
+    static RYEgrid(RYEdata, genData, PARAMETERS){
         let techData = this.getTechData(genData);
         let emiData = this.getEmiData(genData);
         
         let unitData = this.getUnitData(genData, PARAMETERS);
         let paramById = DataModel.getParamById(PARAMETERS);
 
-        let cloneData = JSON.parse(JSON.stringify(RYTEdata));
-        let RYTEgrid = {};
+        let cloneData = JSON.parse(JSON.stringify(RYEdata));
+        let RYEgrid = {};
         $.each(cloneData, function (param, obj) {
-            RYTEgrid[param] = {};
+            RYEgrid[param] = {};
             $.each(obj, function (cs, array) {
-                RYTEgrid[param][cs] = [];
+                RYEgrid[param][cs] = [];
                 $.each(array, function (id, obj) {
                     obj['Tech'] = techData[obj.Tech]['Tech'];
                     obj['TechDesc'] = techData[obj.Tech]['Desc'];
@@ -901,11 +924,11 @@ export class DataModelResult{
                     let rule = paramById['RYTE'][param]['unitRule'];
                     let data = unitData['RYTE'][param][obj.Emi];
                     obj['UnitId'] = jsonLogic.apply(rule, data);
-                    RYTEgrid[param][cs].push(obj);
+                    RYEgrid[param][cs].push(obj);
                 });
             });
         });
-        return RYTEgrid;
+        return RYEgrid;
     }
 
     static RYTETechs(RYTEdata){
@@ -920,17 +943,17 @@ export class DataModelResult{
         return RYTETechs;
     }
 
-    static RYTEchart(genData, RYTEdata){
-        let RYTEchart = {};
-        let RYTE = this.RYTE(RYTEdata);
+    static RYEchart(genData, RYEdata){
+        let RYEchart = {};
+        let RYTE = this.RYTE(RYEdata);
         $.each(RYTE, function (param, obj1) {
-            RYTEchart[param] = {};
+            RYEchart[param] = {};
             $.each(obj1, function (cs, obj2) {
                 if (obj2.length !== 0){
-                    RYTEchart[param][cs] = {};
+                    RYEchart[param][cs] = {};
                     $.each(obj2, function (tech, obj3) {
 
-                        if(!RYTEchart[param][cs][tech]){ RYTEchart[param][cs][tech] = []; }
+                        if(!RYEchart[param][cs][tech]){ RYEchart[param][cs][tech] = []; }
                         $.each(genData['osy-years'], function (idY, year) {
                             let chunk = {};
                             chunk['Year'] = year;
@@ -938,13 +961,13 @@ export class DataModelResult{
                             $.each(obj3, function (comm, obj) {
                                 chunk[comm] = obj[year]
                             });
-                            RYTEchart[param][cs][tech].push(chunk);
+                            RYEchart[param][cs][tech].push(chunk);
                         });
                     });
                 }
             });
         });
-        return RYTEchart;
+        return RYEchart;
     }
 
     static RYTTs(RYTTsdata){
@@ -1238,193 +1261,7 @@ export class DataModelResult{
         return RYTCTsComms;
     }
 
-    static RYTCTsgrid(RYTCTsdata, genData, PARAMETERS){
-        let techData = this.getTechData(genData);
-        let commData = this.getCommData(genData);
-        let unitData = this.getUnitData(genData, PARAMETERS);
-        let paramById = DataModel.getParamById(PARAMETERS);
-        
-        let cloneData = JSON.parse(JSON.stringify(RYTCTsdata));
-        let RYTCTsgrid = {};
-        $.each(cloneData, function (param, obj) {
-            RYTCTsgrid[param] = {};
-            $.each(obj, function (cs, array) {
-                RYTCTsgrid[param][cs] = [];
-                $.each(array, function (id, obj) {
-                    obj['Tech'] = techData[obj.Tech]['Tech'];
-                    obj['TechDesc'] = techData[obj.Tech]['Desc'];
-                    obj['Comm'] = commData[obj.Comm]['Comm'];
-                    obj['commDesc'] = commData[obj.Comm]['Desc'];
-
-                    let rule = paramById['RYTCTs'][param]['unitRule'];
-                    let data1 = unitData['RYTCTs'][param][obj.Comm];
-                    let data2 = unitData['RYTCTs'][param][obj.Tech];
-                    const data = {...data1, ...data2};
-                    obj['UnitId'] = jsonLogic.apply(rule, data);
-                    RYTCTsgrid[param][cs].push(obj);
-                });
-            });
-        });
-        return RYTCTsgrid;
-    }
-
-    static RYTCTschart(genData, RYTCTsdata){
-        let RYTCTschart = {};
-        let RYTCTs = this.RYTCTs(RYTCTsdata);
-        $.each(RYTCTs, function (param, obj1) {
-            RYTCTschart[param] = {};
-            $.each(obj1, function (cs, obj2) {
-                if (obj2.length !== 0){
-                    RYTCTschart[param][cs] = {};
-                    $.each(obj2, function (tech, obj3) {
-                        if(!RYTCTschart[param][cs][tech]){ RYTCTschart[param][cs][tech] = {}; }
-                        $.each(genData['osy-years'], function (idY, year) {
-       
-                            $.each(obj3, function (comm, obj4) {
-                                if(!RYTCTschart[param][cs][tech][comm]){ RYTCTschart[param][cs][tech][comm] = []; }
-                                let chunk = {};
-                                chunk['Year'] = year;
-                                $.each(obj4, function (ts, obj) {
-                                    chunk[ts] = obj[year]
-                                });
-                                RYTCTschart[param][cs][tech][comm].push(chunk);
-                            });
-                            
-                           
-                        });
-                    });
-                }
-            });
-        });  
-        return RYTCTschart;
-    }
-
-    static RYTMTs(RYTMTsMdata){
-        let RYTMTs = {};
-        const cloneData = JSON.parse(JSON.stringify(RYTMTsMdata));
-        $.each(cloneData, function (param, obj1) {
-            RYTMTs[param] = {};
-            $.each(obj1, function (sc, array) {
-                RYTMTs[param][sc] = {};
-                $.each(array, function (id, obj) {
-                    if(!RYTMTs[param][sc][obj.Tech]){ RYTMTs[param][sc][obj.Tech] = {}; }
-                    if(!RYTMTs[param][sc][obj.Tech][obj.MoId]){ RYTMTs[param][sc][obj.Tech][obj.MoId] = {}; }
-                    RYTMTs[param][sc][obj.Tech][obj.MoId][obj.Ts] = obj;
-                        delete obj.Tech;
-                        delete obj.MoId; 
-                        delete obj.Ts;   
-                });
-            });
-        });
-        return RYTMTs;
-    }
-
-    static RYTMTsgrid(RYTMTsdata, genData, PARAMETERS){
-        let techData = this.getTechData(genData);
-        // let mods = DataModel.Mods(genData);
-        // let ts = DataModel.Timeslices(genData);
-        let unitData = this.getUnitData(genData, PARAMETERS);
-        let paramById = DataModel.getParamById(PARAMETERS);
-        
-        let cloneData = JSON.parse(JSON.stringify(RYTMTsdata));
-        let RYTMTsgrid = {};
-        $.each(cloneData, function (param, obj) {
-            RYTMTsgrid[param] = {};
-            $.each(obj, function (cs, array) {
-                RYTMTsgrid[param][cs] = [];
-                $.each(array, function (id, obj) {
-                    obj['Tech'] = techData[obj.Tech]['Tech'];
-                    obj['TechDesc'] = techData[obj.Tech]['Desc'];
-
-                    let rule = paramById['RYTMTs'][param]['unitRule'];
-                    let data = unitData['RYTMTs'][param][obj.Tech];
-                    obj['UnitId'] = jsonLogic.apply(rule, data);
-                    RYTMTsgrid[param][cs].push(obj);
-                });
-            });
-        });
-        return RYTMTsgrid;
-    }
-
-    static RYTMTschart(genData, RYTMTsdata){
-        let RYTMTschart = {};
-        let RYTMTs = this.RYTMTs(RYTMTsdata);
-        $.each(RYTMTs, function (param, obj1) {
-            RYTMTschart[param] = {};
-            $.each(obj1, function (cs, obj2) {
-                if (obj2.length !== 0){
-                    RYTMTschart[param][cs] = {};
-                    $.each(obj2, function (tech, obj3) {
-                        if(!RYTMTschart[param][cs][tech]){ RYTMTschart[param][cs][tech] = {}; }
-                        $.each(genData['osy-years'], function (idY, year) {
-                            $.each(obj3, function (mod, obj4) {
-                                if(!RYTMTschart[param][cs][tech][mod]){ RYTMTschart[param][cs][tech][mod] = []; }
-                                let chunk = {};
-                                chunk['Year'] = year;
-                                $.each(obj4, function (ts, obj) {
-                                    chunk[ts] = obj[year]
-                                });
-                                RYTMTschart[param][cs][tech][mod].push(chunk);
-                            });
-                        });
-                    });
-                }
-            });
-        });  
-        return RYTMTschart;
-    }
-
-    static RYTCMTs(RYTCMTsMdata){
-        let RYTCMTs = {};
-        const cloneData = JSON.parse(JSON.stringify(RYTCMTsMdata));
-        $.each(cloneData, function (param, obj1) {
-            RYTCMTs[param] = {};
-            $.each(obj1, function (cs, array) {
-                RYTCMTs[param][cs] = {};
-                $.each(array, function (id, obj) {
-                    if(!RYTCMTs[param][cs][obj.Tech]){ RYTCMTs[param][cs][obj.Tech] = {}; }
-                    if(!RYTCMTs[param][cs][obj.Tech][obj.Comm]){ RYTCMTs[param][cs][obj.Tech][obj.Comm] = {}; }
-                    if(!RYTCMTs[param][cs][obj.Tech][obj.Comm][obj.MoId]){ RYTCMTs[param][cs][obj.Tech][obj.Comm][obj.MoId] = {}; }
-
-                    RYTCMTs[param][cs][obj.Tech][obj.Comm][obj.MoId][obj.Ts] = obj;
-                        delete obj.Tech;
-                        delete obj.Comm; 
-                        delete obj.MoId;
-                        delete obj.Ts;   
-                });
-            });
-        });
-        return RYTCMTs;
-    }
-
-    static RYTCMTsTechs(RYTCMTsdata){
-        let RYTCTsTechs = {};
-        let RYTCMTs = this.RYTCMTs(RYTCMTsdata);
-        $.each(RYTCMTs, function (param, obj1) {
-            RYTCTsTechs[param] = {};
-            $.each(obj1, function (cs, array) {
-                RYTCTsTechs[param][cs] = Object.keys(array);
-            });
-        });
-        return RYTCTsTechs;
-    }
-
-    static RYTCMTsComms(RYTCMTsdata){
-        let RYTCTsComms = {};
-        let RYTCMTs = this.RYTCMTs(RYTCMTsdata);
-        $.each(RYTCMTs, function (param, obj1) {
-            RYTCTsComms[param] = {};
-            $.each(obj1, function (cs, obj2) {
-                RYTCTsComms[param][cs] = {};
-                $.each(obj2, function (comm, array) {
-                    RYTCTsComms[param][cs][comm] = Object.keys(array);
-                });
-            });
-        });
-        return RYTCTsComms;
-    }
-
-    static RYTCMTsgrid(RYTCMTsdata, genData, PARAMETERS){
+    static RYTCTsgrid(RYTCMTsdata, genData, PARAMETERS){
         let techData = this.getTechData(genData);
         let commData = this.getCommData(genData);
         let unitData = this.getUnitData(genData, PARAMETERS);
@@ -1442,9 +1279,9 @@ export class DataModelResult{
                     obj['Comm'] = commData[obj.Comm]['Comm'];
                     obj['commDesc'] = commData[obj.Comm]['Desc'];
 
-                    let rule = paramById['RYTCMTs'][param]['unitRule'];
-                    let data1 = unitData['RYTCMTs'][param][obj.Comm];
-                    let data2 = unitData['RYTCMTs'][param][obj.Tech];
+                    let rule = paramById['RYTCTs'][param]['unitRule'];
+                    let data1 = unitData['RYTCTs'][param][obj.Comm];
+                    let data2 = unitData['RYTCTs'][param][obj.Tech];
                     const data = {...data1, ...data2};
                     obj['UnitId'] = jsonLogic.apply(rule, data);
                     RYTCMTsgrid[param][cs].push(obj);
@@ -1454,7 +1291,7 @@ export class DataModelResult{
         return RYTCMTsgrid;
     }
 
-    static RYTCMTschart(genData, RYTCMTsdata){
+    static RYTCTschart(genData, RYTCMTsdata){
         let RYTCTschart = {};
         let RYTCMTs = this.RYTCMTs(RYTCMTsdata);
         $.each(RYTCMTs, function (param, obj1) {
