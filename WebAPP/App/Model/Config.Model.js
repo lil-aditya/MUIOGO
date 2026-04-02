@@ -80,11 +80,13 @@ export class Model {
 
         //var Grid
         let gridVarData = []
-        $.each(RESULTGROUPNAMES, function (group, name) {   
-            $.each(VARIABLES[group], function (id, obj) {
+        let resultGroupNames = {};
+        $.each(VARIABLES, function (group, array) {
+            resultGroupNames[group] = RESULTGROUPNAMES[group] || group;
+            $.each(array, function (id, obj) {
                 let tmp = {};
                 tmp['groupId'] = group;
-                tmp['groupName'] = name;
+                tmp['groupName'] = resultGroupNames[group];
                 tmp['id'] = obj.id;
                 tmp['value'] = obj.value;
                 tmp['name'] = obj.name;
@@ -137,7 +139,7 @@ export class Model {
         this.unitsDef = unitsDef;
         this.paramById = paramById;
         this.GROUPNAMES = GROUPNAMES;
-        this.RESULTGROUPNAMES = RESULTGROUPNAMES;
+        this.RESULTGROUPNAMES = resultGroupNames;
         this.paramNames =paramNames;
         this.varNames = varNames;
         //this.unitIdByVal = unitIdByVal;
