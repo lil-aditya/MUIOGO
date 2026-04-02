@@ -37,6 +37,21 @@
 		<script src="References/plotly/plotly-2.27.0.min.js"></script>
 		<!-- <script src='https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js'></script> -->
 
+		<script>
+			window.MathJax = window.MathJax || {
+				tex: {
+					packages: { '[+]': ['ams'] },
+					inlineMath: [['\\(', '\\)']],
+					displayMath: [['$$', '$$']],
+					processEscapes: true,
+					processEnvironments: true,
+					linebreaks: { automatic: true }
+				}
+			};
+		</script>
+		<!-- Swap this CDN src later if MathJax is vendored locally. -->
+		<script id="muiogo-mathjax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" defer></script>
+
 
 
 		<!-- SmartAdmin Styles : Caution! DO NOT change the order -->
