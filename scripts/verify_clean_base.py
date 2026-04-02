@@ -77,7 +77,9 @@ def iter_repo_files(root: Path, suffixes: set[str]) -> Iterable[Path]:
             path = root / raw_path.decode("utf-8", "surrogateescape")
             if path.suffix.lower() not in suffixes:
                 continue
-            if any(part in SKIP_DIR_NAMES for part in path.parts):
+            # Apply skip filtering to paths *within the repo*, not absolute paths.
+            rel_parts = path.relative_to(root).parts
+            if any(part in SKIP_DIR_NAMES for part in rel_parts):
                 continue
             yield path
         return
@@ -87,7 +89,8 @@ def iter_repo_files(root: Path, suffixes: set[str]) -> Iterable[Path]:
             continue
         if path.suffix.lower() not in suffixes:
             continue
-        if any(part in SKIP_DIR_NAMES for part in path.parts):
+        rel_parts = path.relative_to(root).parts
+        if any(part in SKIP_DIR_NAMES for part in rel_parts):
             continue
         yield path
 
@@ -175,40 +178,46 @@ def run_smoke_tests(root: Path) -> int:
 
 
 def main() -> int:
-    print(f"[verify] repo root: {REPO_ROOT}")
+    # Do not allow any verification step to emit __pycache__ into the repo.
+    old_dont_write = sys.dont_write_bytecode
+    sys.dont_write_bytecode = True
+    try:
+        print(f"[verify] repo root: {REPO_ROOT}")
 
-    git_state = check_unresolved_git_state(REPO_ROOT)
-    if git_state:
-        print("[FAIL] unresolved git state detected:")
-        for issue in git_state:
-            print(f"  - {issue}")
-        return 1
-    print("[OK] git state: clean")
+        git_state = check_unresolved_git_state(REPO_ROOT)
+        if git_state:
+            print("[FAIL] unresolved git state detected:")
+            for issue in git_state:
+                print(f"  - {issue}")
+            return 1
+        print("[OK] git state: clean")
 
-    conflicts = check_conflict_markers(REPO_ROOT)
-    if conflicts:
-        print("[FAIL] conflict markers found:")
-        for conflict in conflicts:
-            print(f"  - {conflict}")
-        return 1
-    print("[OK] no conflict markers found")
+        conflicts = check_conflict_markers(REPO_ROOT)
+        if conflicts:
+            print("[FAIL] conflict markers found:")
+            for conflict in conflicts:
+                print(f"  - {conflict}")
+            return 1
+        print("[OK] no conflict markers found")
 
-    compile_failures = run_py_compile(REPO_ROOT)
-    if compile_failures:
-        print("[FAIL] python compile step failed:")
-        for failure in compile_failures:
-            print(f"  - {failure}")
-        return 1
-    print("[OK] python compile step passed")
+        compile_failures = run_py_compile(REPO_ROOT)
+        if compile_failures:
+            print("[FAIL] python compile step failed:")
+            for failure in compile_failures:
+                print(f"  - {failure}")
+            return 1
+        print("[OK] python compile step passed")
 
-    smoke_status = run_smoke_tests(REPO_ROOT)
-    if smoke_status != 0:
-        print(f"[FAIL] smoke tests failed (rc={smoke_status})")
-        return smoke_status
-    print("[OK] smoke tests passed")
+        smoke_status = run_smoke_tests(REPO_ROOT)
+        if smoke_status != 0:
+            print(f"[FAIL] smoke tests failed (rc={smoke_status})")
+            return smoke_status
+        print("[OK] smoke tests passed")
 
-    print("[SUCCESS] clean-base verification passed")
-    return 0
+        print("[SUCCESS] clean-base verification passed")
+        return 0
+    finally:
+        sys.dont_write_bytecode = old_dont_write
 
 
 if __name__ == "__main__":
