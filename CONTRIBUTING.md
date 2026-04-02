@@ -73,6 +73,12 @@ The `pr-intake` workflow is advisory. If required structure is missing, it may a
 5. Update docs for any setup, architecture, or workflow change
 6. Open a PR into `EAPD-DRB/MUIOGO:main` using the repository PR template
 
+## Clean-base verification
+
+Run `python scripts/verify_clean_base.py` before upstream sync merges and before requesting review on guardrail work. It checks unresolved git operation state, conflict markers, Python compilation, and the stdlib smoke harness.
+
+See `docs/dev/upstream_sync_playbook.md` for the v5.5 sync order, overlap inventory, and rejected upstream patterns.
+
 ## Required branching rule
 
 Every implementation contribution must use:
