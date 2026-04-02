@@ -8,51 +8,50 @@ from Classes.Base.FileClass import File
 class Osemosys():
     def __init__(self, case):
         self.case = case
-        self.PARAMETERS = File.readParamFile(Path(Config.DATA_STORAGE, 'Parameters.json'))
-        self.VARIABLES = File.readParamFile(Path(Config.DATA_STORAGE, 'Variables.json'))
-        self.genData =  File.readFile(Path(Config.DATA_STORAGE,case,'genData.json'))
-        self.resData = File.readFile( Path(Config.DATA_STORAGE, case,'view', 'resData.json'))
-        
-        #Case.__init__(self, case)
-        self.casePath = Path(Config.DATA_STORAGE,case)
-        self.zipPath = Path(Config.DATA_STORAGE,case+'.zip')
+        self.storagePath = Path(Config.DATA_STORAGE)
+        self.casePath = self.storagePath / case
+        self.resultsPath = self.casePath / "res"
+        self.viewFolderPath = self.casePath / "view"
+        self.resDataPath = self.viewFolderPath / "resData.json"
 
-        #self.genData = Path(Config.DATA_STORAGE,case,'genData.json')
+        self.PARAMETERS = File.readParamFile(self.storagePath / "Parameters.json")
+        self.VARIABLES = File.readParamFile(self.storagePath / "Variables.json")
+        self.genData = File.readFile(self.casePath / "genData.json")
+        if self.resDataPath.exists():
+            self.resData = File.readFile(self.resDataPath)
+        else:
+            self.resData = {"osy-cases": []}
 
-        self.rPath = Path(Config.DATA_STORAGE,case,'R.json')
-        self.ryPath = Path(Config.DATA_STORAGE,case,'RY.json')
-        self.rtPath = Path(Config.DATA_STORAGE,case,'RT.json')
-        self.rePath = Path(Config.DATA_STORAGE,case,'RE.json')
-        self.rsPath = Path(Config.DATA_STORAGE,case,'RS.json')
-        self.rycnPath = Path(Config.DATA_STORAGE,case,'RYCn.json')
-        self.rytPath = Path(Config.DATA_STORAGE,case,'RYT.json')
-        self.rysPath = Path(Config.DATA_STORAGE,case,'RYS.json')
-        self.rytcnPath = Path(Config.DATA_STORAGE,case,'RYTCn.json')
-        self.rytmPath = Path(Config.DATA_STORAGE,case,'RYTM.json')
-        self.rytcPath = Path(Config.DATA_STORAGE,case,'RYTC.json')
-        self.rytcmPath = Path(Config.DATA_STORAGE,case,'RYTCM.json')
-        self.rytsmPath = Path(Config.DATA_STORAGE,case,'RYTSM.json')
-        self.rtsmPath = Path(Config.DATA_STORAGE,case,'RTSM.json')
-        self.rytsPath = Path(Config.DATA_STORAGE,case,'RYTs.json')
-        self.rydtbPath = Path(Config.DATA_STORAGE,case,'RYDtb.json')
-        self.rysedtPath = Path(Config.DATA_STORAGE,case,'RYSeDt.json')
-        self.rycPath = Path(Config.DATA_STORAGE,case,'RYC.json')
-        self.ryePath = Path(Config.DATA_STORAGE,case,'RYE.json')
-        self.ryttsPath = Path(Config.DATA_STORAGE,case,'RYTTs.json')
-        self.ryctsPath = Path(Config.DATA_STORAGE,case,'RYCTs.json')
-        self.rytePath = Path(Config.DATA_STORAGE,case,'RYTE.json')
-        self.rytemPath = Path(Config.DATA_STORAGE,case,'RYTEM.json')
+        self.zipPath = self.storagePath / f"{case}.zip"
 
-        
-        self.osemosysFile = Path(Config.SOLVERs_FOLDER,'model.v.5.4.txt') 
-        self.osemosysFileOriginal = Path(Config.SOLVERs_FOLDER,'osemosys.txt')
+        self.rPath = self.casePath / "R.json"
+        self.ryPath = self.casePath / "RY.json"
+        self.rtPath = self.casePath / "RT.json"
+        self.rePath = self.casePath / "RE.json"
+        self.rsPath = self.casePath / "RS.json"
+        self.rycnPath = self.casePath / "RYCn.json"
+        self.rytPath = self.casePath / "RYT.json"
+        self.rysPath = self.casePath / "RYS.json"
+        self.rytcnPath = self.casePath / "RYTCn.json"
+        self.rytmPath = self.casePath / "RYTM.json"
+        self.rytcPath = self.casePath / "RYTC.json"
+        self.rytcmPath = self.casePath / "RYTCM.json"
+        self.rytsmPath = self.casePath / "RYTSM.json"
+        self.rtsmPath = self.casePath / "RTSM.json"
+        self.rytsPath = self.casePath / "RYTs.json"
+        self.rydtbPath = self.casePath / "RYDtb.json"
+        self.rysedtPath = self.casePath / "RYSeDt.json"
+        self.rycPath = self.casePath / "RYC.json"
+        self.ryePath = self.casePath / "RYE.json"
+        self.ryttsPath = self.casePath / "RYTTs.json"
+        self.ryctsPath = self.casePath / "RYCTs.json"
+        self.rytePath = self.casePath / "RYTE.json"
+        self.rytemPath = self.casePath / "RYTEM.json"
+
+        self.osemosysFile = Path(Config.SOLVER_MODEL_FILE)
+        self.osemosysFileOriginal = Path(Config.SOLVERs_FOLDER, "osemosys.txt")
         self._glpkFolder = None
         self._cbcFolder = None
-
-        self.resultsPath = Path(Config.DATA_STORAGE,case,'res')
-        self.viewFolderPath = Path(Config.DATA_STORAGE,case,'view')
-        
-        self.resDataPath = Path(Config.DATA_STORAGE,case,'view', 'resData.json')
 
         # self.resPath = Path(Config.DATA_STORAGE,case,'res', 'csv')
         

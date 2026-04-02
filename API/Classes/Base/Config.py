@@ -36,6 +36,23 @@ load_dotenv()
 
 SYSTEM = platform.system()
 
+
+def _default_runtime_dir():
+    override = os.environ.get("MUIOGO_RUNTIME_DIR", "").strip()
+    if override:
+        return Path(override).expanduser()
+
+    if SYSTEM == "Windows":
+        base_dir = Path(os.environ.get("LOCALAPPDATA", str(Path.home())))
+    elif SYSTEM == "Darwin":
+        base_dir = Path.home() / "Library" / "Logs"
+    else:
+        base_dir = Path(
+            os.environ.get("XDG_STATE_HOME", str(Path.home() / ".local" / "state"))
+        )
+
+    return base_dir / "MUIOGO"
+
 # S3_BUCKET = os.environ.get("S3_BUCKET")
 # S3_KEY = os.environ.get("S3_KEY")
 # S3_SECRET = os.environ.get("S3_SECRET")
@@ -62,6 +79,10 @@ DATA_STORAGE = WEBAPP_PATH / "DataStorage"
 CLASS_FOLDER = WEBAPP_PATH / "Classes"
 SOLVERs_FOLDER = WEBAPP_PATH / "SOLVERs"
 EXTRACT_FOLDER = BASE_DIR
+RUNTIME_DIR = _default_runtime_dir()
+LOG_DIR = RUNTIME_DIR / "logs"
+APP_LOG_FILE = LOG_DIR / "app.log"
+SOLVER_MODEL_FILE = SOLVERs_FOLDER / "model.v.5.4.txt"
 
 # Ensure DataStorage exists
 DATA_STORAGE.mkdir(parents=True, exist_ok=True)
